@@ -21,40 +21,74 @@ library(purrr)
 
 #excel_file <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019"),
-#           "Rank_Changes_Verts_Leps_Odonates_Molluscs.xlsx"
+#           "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.xlsx"
 #  )
 
 # or read Git local version
 excel_file <- file.path("data",
-                        "Rank_Changes_Verts_Leps_Odonates_Molluscs.xlsx")
+                        "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.xlsx")
 
 
 sdata <- read_excel(excel_file, sheet = "Query Output",
-                    range = "A2:M877",
+                    range = "A2:O2731",
                     col_types = c("numeric", "text", "numeric",
-                                  rep("text", 2), rep("date",3),
+                                  rep("text", 4), rep("date",3),
                                   rep("text", 2), "numeric",
                                   rep("text", 2)),
-                    col_names = c("id", "ELCODE", "est_id",
+                    col_names = c("ID", "ELCODE", "EST_ID",
                                   "Scientific_Name", "Common_Name",
+                                  "Current_SRANK", "BC_LIST",
                                   "Rank_Review_Date", "Range_change_Date",
                                   "Change_Entry_Date", "prev_SRank",
                                   "new_SRank", "code", "reason", "comment"))  %>%
-
       mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
-                                      ifelse(startsWith(ELCODE,"AB"),"Breeding Birds",
-                                             ifelse(startsWith(ELCODE,"AF"),"Freshwater Fish",
-                                                    ifelse(startsWith(ELCODE,"AM"),"Mammals",
-                                                           ifelse(startsWith(ELCODE,"AR"),"Reptiles and Turtles", NA)))))) %>%
+                                      ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
+                                             ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
+                                                    ifelse(startsWith(ELCODE, "AM"), "Mammals",
+                                                           ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
+                                                                  ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
+                                                                         ifelse(startsWith(ELCODE, "IIO"),"Odonata",
+                                                                                ifelse(startsWith(ELCODE, "IM"), "Molluscs",
+                                                                                                  NA))))))))) %>%
 
       select(Taxonomic_Group, Scientific_Name, Common_Name, everything())
 
-
-# still need to rename the invers
+# summary of the data types per taxonomic group
 
 data_summary <- sdata %>%
   group_by(Taxonomic_Group) %>%
-  summarise(count = n())
+  summarise(sp.no = length(unique(Scientific_Name)))
+
+data_summary
+
+# format the data frame to match data entry information
+
+sdata <- sdata %>%
+  RANK_CHANGE_DATE
+  PREV_SRANK
+  NEW_RANK
+  CODE
+  REASON_DESC
+
+# which of the dates to use? and format to long-term
+
+# for contracting we want to determine
+
+# 1) number of species per taxanomic_group
+# 2) How many changed? + time stamps
+# 3) reason for change - when not genuine change
+
+odata <- sdata %>%
+  filter(Taxonomic_Group == "Odonata")
+
+
+
+
+
+
+
+
+
 
 
 
