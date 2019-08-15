@@ -37,9 +37,9 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
                                   rep("text", 2)),
                     col_names = c("ID", "ELCODE", "EST_ID",
                                   "Scientific_Name", "Common_Name",
-                                  "Current_SRANK", "BC_LIST",
-                                  "Rank_Review_Date", "Range_change_Date",
-                                  "Change_Entry_Date", "prev_SRank",
+                                  "current_SRANK", "BC_LIST",
+                                  "rank_review_date", "rank_change_date",
+                                  "change_entry_date", "prev_SRank",
                                   "new_SRank", "code", "reason", "comment"))  %>%
       mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
                                       ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
@@ -53,7 +53,10 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
 
       select(Taxonomic_Group, Scientific_Name, Common_Name, everything())
 
-# summary of the data types per taxonomic group
+
+# for contracting we want to determine
+
+# 1) number of species per taxanomic_group
 
 data_summary <- sdata %>%
   group_by(Taxonomic_Group) %>%
@@ -61,21 +64,44 @@ data_summary <- sdata %>%
 
 data_summary
 
-# format the data frame to match data entry information
 
-sdata <- sdata %>%
-  RANK_CHANGE_DATE
-  PREV_SRANK
-  NEW_RANK
-  CODE
-  REASON_DESC
+# note if there is no date in the rank_change_date then only single assesment
+newdata <- sdata %>%
+  group_by(Taxonomic_Group) %>%
+  filter(is.na(rank_change_date)) %>%
+  summarise(sp.single.asses = length(unique(Scientific_Name)))
 
-# which of the dates to use? and format to long-term
+data_summary = left_join(data_summary, newdata)
 
-# for contracting we want to determine
 
-# 1) number of species per taxanomic_group
+## TO DO:
+
+# notes seems like duplicates in the data set (evrything with an ID is duplicated...??)
+# remove dumplcates keeping full data
+
+length(sdata$)
+
+tdata <- sdata %>%
+  group_by(Taxonomic_Group, Scientific_Name, Common_Name,
+           ELCODE, current_SRANK, rank_review_date, rank_change_date) %>%
+  filter(is.na(rank_change_date)) %>%
+
+
+x <-   distinct(sdata,Taxonomic_Group, Scientific_Name, Common_Name,
+           ELCODE, current_SRANK, rank_review_date, rank_change_date,
+           .keep_all= TRUE)
+
 # 2) How many changed? + time stamps
+
+
+newdata <- sdata %>%
+  group_by(Taxonomic_Group) %>%
+  filter(is.na(rank_change_date)) %>%
+  summarise(sp.single.asses = length(unique(Scientific_Name)))
+
+
+
+
 # 3) reason for change - when not genuine change
 
 odata <- sdata %>%
