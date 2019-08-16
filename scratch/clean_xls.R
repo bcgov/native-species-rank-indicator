@@ -10,6 +10,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+remotes::install_github("bcgov/bcgovr")
+remotes::install_github("bcgov/envreportutils")
+library(bcgovr)
+
 library(readxl)
 library(cellranger) # letter_to_num
 library(dplyr)
@@ -18,6 +22,7 @@ library(envreportutils)
 library(stringr)
 library(purrr)
 
+R.home()
 
 #excel_file <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019"),
