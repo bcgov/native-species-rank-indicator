@@ -17,6 +17,7 @@ library(tidyr)
 library(envreportutils)
 library(stringr)
 library(purrr)
+library(lubridate)
 
 
 #excel_file <- file.path(
@@ -54,7 +55,7 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
       select(Taxonomic_Group, Scientific_Name, Common_Name, everything())
 
 
-# for contracting we want to determine
+# To estimate contracting details
 
 # 1) number of species per taxanomic_group
 data_summary <- sdata %>%
@@ -62,8 +63,6 @@ data_summary <- sdata %>%
   summarise(sp.no = length(unique(Scientific_Name)))
 
 data_summary
-
-library(lubridate)
 
 # note if there is no date in the rank_change_date then only single assesment
 newdata <- sdata %>%
@@ -73,9 +72,16 @@ newdata <- sdata %>%
 
 data_summary = left_join(data_summary, newdata)
 
-## TO DO:
+
+
+
+## In detail per taxonomic group
 
 # seems like there is duplicates in the data set (evrything with an ID is duplicated...??)
+
+# this code works for odonates, but needs some tweaks for to run for all tax groups
+
+
 
 odata <- sdata %>%
   filter(Taxonomic_Group == "Odonata")
@@ -141,13 +147,15 @@ data_sum <- bind_rows(single.assess,
 data_sum
 
 #write.csv(data_sum, file.path("data", "odo_test.csv"))
+write.csv(data_sum, file.path("data", "allgroups_test.csv"))
+
 
 # 2) How many changed? + time stamp
 
 
 # 3) reason for change - when not genuine change
 cdata <- data_sum %>%
-  group_by(reason, comment) %>%
+  group_by( Taxonomic_Group, reason, comment) %>%
   summarise(count = n())
 
 
