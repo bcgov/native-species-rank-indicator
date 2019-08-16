@@ -57,13 +57,13 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
 # for contracting we want to determine
 
 # 1) number of species per taxanomic_group
-
 data_summary <- sdata %>%
   group_by(Taxonomic_Group) %>%
   summarise(sp.no = length(unique(Scientific_Name)))
 
 data_summary
 
+library(lubridate)
 
 # note if there is no date in the rank_change_date then only single assesment
 newdata <- sdata %>%
@@ -73,39 +73,83 @@ newdata <- sdata %>%
 
 data_summary = left_join(data_summary, newdata)
 
-
 ## TO DO:
 
-# notes seems like duplicates in the data set (evrything with an ID is duplicated...??)
-# remove dumplcates keeping full data
-
-length(sdata$)
-
-tdata <- sdata %>%
-  group_by(Taxonomic_Group, Scientific_Name, Common_Name,
-           ELCODE, current_SRANK, rank_review_date, rank_change_date) %>%
-  filter(is.na(rank_change_date)) %>%
-
-
-x <-   distinct(sdata,Taxonomic_Group, Scientific_Name, Common_Name,
-           ELCODE, current_SRANK, rank_review_date, rank_change_date,
-           .keep_all= TRUE)
-
-# 2) How many changed? + time stamps
-
-
-newdata <- sdata %>%
-  group_by(Taxonomic_Group) %>%
-  filter(is.na(rank_change_date)) %>%
-  summarise(sp.single.asses = length(unique(Scientific_Name)))
-
-
-
-
-# 3) reason for change - when not genuine change
+# seems like there is duplicates in the data set (evrything with an ID is duplicated...??)
 
 odata <- sdata %>%
   filter(Taxonomic_Group == "Odonata")
+
+# filter those with only a single review
+single.assess <- odata %>%
+  filter(is.na(rank_change_date)) %>%
+  mutate(year = year(rank_review_date),
+         comment = "initial assesment") %>%
+  select(c(Taxonomic_Group, Scientific_Name,
+           Common_Name, current_SRANK,
+           year, reason, comment))
+
+# filter and format data with two or more assessments
+twice.assess <- odata %>%
+  filter(!is.na(rank_change_date)) %>%      # remove sp with only a single review
+  distinct(Taxonomic_Group, Scientific_Name, Common_Name,
+           ELCODE, current_SRANK, rank_review_date, rank_change_date,
+           .keep_all= TRUE)   %>%
+  select(c(Taxonomic_Group, Scientific_Name,
+           Common_Name, current_SRANK,
+           rank_review_date,rank_change_date,
+           change_entry_date, prev_SRank, new_SRank,
+           code, reason))
+
+# convert data with twice assessment and no change
+twice.assess.no.change <- twice.assess %>%
+  filter(is.na(change_entry_date)) %>%
+  mutate(year1 = year(rank_review_date),
+         year2 = year(rank_change_date),
+         comment = "no change") %>%
+  gather("n", "year", 12:13) %>%
+  select(c(Taxonomic_Group, Scientific_Name,
+           Common_Name, current_SRANK,
+           year, reason, comment))
+
+# convert data twice assess with change
+# extract start ranking ~ unknown date
+twice.assess.with.change.start <- twice.assess %>%
+  filter(!is.na(change_entry_date)) %>%
+  select(c(Taxonomic_Group, Scientific_Name,
+           Common_Name, prev_SRank)) %>%
+  mutate(year = 9999,
+         current_SRANK = prev_SRank,
+         comment = "unknown start date") %>%
+  select(-prev_SRank)
+
+# extract current ranking ~ known date and reason
+twice.assess.with.change.end <- twice.assess %>%
+  filter(!is.na(change_entry_date)) %>%
+  select(c(Taxonomic_Group, Scientific_Name,
+           Common_Name, change_entry_date,
+           current_SRANK, code, reason)) %>%
+  mutate(year = year(change_entry_date)) %>%
+  select(-change_entry_date)
+
+
+data_sum <- bind_rows(single.assess,
+                      twice.assess.no.change,
+                      twice.assess.with.change.start,
+                      twice.assess.with.change.end)
+
+data_sum
+
+#write.csv(data_sum, file.path("data", "odo_test.csv"))
+
+# 2) How many changed? + time stamp
+
+
+# 3) reason for change - when not genuine change
+cdata <- data_sum %>%
+  group_by(reason, comment) %>%
+  summarise(count = n())
+
 
 
 
