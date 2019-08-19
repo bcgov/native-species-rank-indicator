@@ -22,7 +22,6 @@ library(envreportutils)
 library(stringr)
 library(purrr)
 
-R.home()
 
 #excel_file <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019"),
@@ -67,8 +66,15 @@ data_summary <- sdata %>%
   group_by(Taxonomic_Group) %>%
   summarise(sp.no = length(unique(Scientific_Name)))
 
-data_summary
+#data_summary
 
+no_status <- sdata %>%
+  group_by(Taxonomic_Group) %>%
+  filter(is.na(rank_review_date)) %>%
+  filter(BC_LIST == "No Status") %>%
+  summarise(no.status.sp = length(unique(Scientific_Name)))
+
+data_summary = left_join(data_summary, no_status)
 
 # note if there is no date in the rank_change_date then only single assesment
 newdata <- sdata %>%
