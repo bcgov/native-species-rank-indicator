@@ -33,7 +33,6 @@ library(lubridate)
 excel_file <- file.path("data",
                         "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.xlsx")
 
-
 sdata <- read_excel(excel_file, sheet = "Query Output",
                     range = "A2:O2731",
                     col_types = c("numeric", "text", "numeric",
@@ -56,17 +55,62 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
                                                                                 ifelse(startsWith(ELCODE, "IM"), "Molluscs",
                                                                                                   NA))))))))) %>%
 
-      select(Taxonomic_Group, Scientific_Name, Common_Name, everything())
+      select(Taxonomic_Group, Scientific_Name, Common_Name, everything()) %>%
+      filter(! BC_LIST == "Exotic") #%>%
+    # group_by(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE,  # remove duplicates?
+    #        current_SRANK, BC_LIST, rank_review_date, rank_change_date,
+    #        change_entry_date) %>%
+    #  filter(!is.na(change_entry_date)) %>%
+    #  ungroup()
+
+write.csv(sdata, file.path("data", "test1.csv"))
+
+# Attempt 1;
+# reformat data
+
+ssdata <- sdata %>%
+  mutate(review_yr = year(rank_review_date),
+         change_yr = year(rank_change_date),
+         ch_entry_yr = year(change_entry_date)) %>%
+  select(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE,
+         current_SRANK, BC_LIST, prev_SRank, new_SRank, code,
+         reason, comment, review_yr, change_yr, ch_entry_yr)
+
+write.csv(ssdata, file.path("data", "test1.csv"))
+
+# test data set with molluscs
+ssdata <- ssdata %>%
+  filter(Taxonomic_Group == "Molluscs")
+
+# filter the duplicates with NA but keep real NA's # not working
+#dup <- ssdata %>%
+# group_by(Taxonomic_Group, Scientific_Name, prev_SRank) %>%
+#  summarise(count = length(prev_SRank))
+#write.csv(dup, file.path("data", "testd.csv"))
+
+multi.ssdata <- ssdata %>%
+  mutate(yr_change = ifelse(current_SRANK == new_SRank,"YES","NO"))
 
 
-# To estimate contracting details
+mdata1 <- multi.ssdata %>%
+  filter(yr_change == "YES") %>%
+  select(c(Taxonomic_Group, Scientific_Name,
+                   Common_Name,ELCODE, current_SRANK, BC_LIST,
+                   ch_entry_yr, code, reason, comment))
 
-# 1) number of species per taxanomic_group
+mdata2 <- multi.ssdata %>%
+  filter(yr_change == "NO") %>%
+  select(c(Taxonomic_Group, Scientific_Name,
+           Common_Name,ELCODE, current_SRANK, BC_LIST,
+           ch_entry_yr, code, reason, comment))
+
+
+# To estimate contracting details:
+
+# 1) number of native species per taxanomic_group
 data_summary <- sdata %>%
   group_by(Taxonomic_Group) %>%
   summarise(sp.no = length(unique(Scientific_Name)))
-
-#data_summary
 
 no_status <- sdata %>%
   group_by(Taxonomic_Group) %>%
@@ -74,28 +118,15 @@ no_status <- sdata %>%
   filter(BC_LIST == "No Status") %>%
   summarise(no.status.sp = length(unique(Scientific_Name)))
 
-<<<<<<< HEAD
 data_summary = left_join(data_summary, no_status)
 
-=======
->>>>>>> ade8be74d1078fa901c3cf0826face7c60387aec
-# note if there is no date in the rank_change_date then only single assesment
-newdata <- sdata %>%
-  group_by(Taxonomic_Group) %>%
-  filter(is.na(rank_change_date)) %>%
-  summarise(sp.single.asses = length(unique(Scientific_Name)))
 
-data_summary = left_join(data_summary, newdata)
+# Note: seems like there is duplicates in the data set (evrything with an ID is duplicated...??)
 
 
 
 
-## In detail per taxonomic group
-
-# seems like there is duplicates in the data set (evrything with an ID is duplicated...??)
-
-# this code works for odonates, but needs some tweaks for to run for all tax groups
-
+# Attempt 2;
 
 
 odata <- sdata %>%
@@ -172,14 +203,6 @@ write.csv(data_sum, file.path("data", "allgroups_test.csv"))
 cdata <- data_sum %>%
   group_by( Taxonomic_Group, reason, comment) %>%
   summarise(count = n())
-
-
-
-
-
-
-
-
 
 
 
