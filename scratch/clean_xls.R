@@ -10,10 +10,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-remotes::install_github("bcgov/bcgovr")
-remotes::install_github("bcgov/envreportutils")
-library(bcgovr)
+#remotes::install_github("bcgov/bcgovr")
+#remotes::install_github("bcgov/envreportutils")
 
+library(bcgovr)
 library(readxl)
 library(cellranger) # letter_to_num
 library(dplyr)
@@ -57,16 +57,27 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
 
       select(Taxonomic_Group, Scientific_Name, Common_Name, everything()) %>%
       filter(! BC_LIST == "Exotic") #%>%
-    # group_by(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE,  # remove duplicates?
-    #        current_SRANK, BC_LIST, rank_review_date, rank_change_date,
-    #        change_entry_date) %>%
-    #  filter(!is.na(change_entry_date)) %>%
-    #  ungroup()
 
-write.csv(sdata, file.path("data", "test1.csv"))
+# Calculate number of species per group -------------
 
-# Attempt 1;
-# reformat data
+# 1) number of native species per taxanomic_group
+
+data_summary <- sdata %>%
+  group_by(Taxonomic_Group) %>%
+  summarise(sp.no = length(unique(Scientific_Name)))
+
+no_status <- sdata %>%
+  group_by(Taxonomic_Group) %>%
+  filter(is.na(rank_review_date)) %>%
+  filter(BC_LIST == "No Status") %>%
+  summarise(no.status.sp = length(unique(Scientific_Name)))
+
+data_summary = left_join(data_summary, no_status)
+
+data_summary
+
+
+# Reformat data table to match current data input ----------
 
 ssdata <- sdata %>%
   mutate(review_yr = year(rank_review_date),
@@ -76,11 +87,112 @@ ssdata <- sdata %>%
          current_SRANK, BC_LIST, prev_SRank, new_SRank, code,
          reason, comment, review_yr, change_yr, ch_entry_yr)
 
-write.csv(ssdata, file.path("data", "test1.csv"))
 
 # test data set with molluscs
 ssdata <- ssdata %>%
   filter(Taxonomic_Group == "Molluscs")
+# filter(Taxonomic_Group == "Odonata")
+
+# split data by number of rank changes (ie: single or multiple)
+ssdata.sum <- ssdata %>%
+  group_by(Scientific_Name)%>%
+  summarise(nrows = n())
+
+ssdata <- ssdata %>%
+  left_join(ssdata.sum)
+
+# filter out species with only one entry line
+
+single <- ssdata %>% filter(nrows == 1)
+
+#single review
+t1 <- single %>%
+  filter(is.na(change_yr)) %>%
+  mutate(GP_comment = "initial review?") %>%
+  select(c(Taxonomic_Group, Scientific_Name,
+         Common_Name, current_SRANK,
+         review_yr, code, reason, comment, GP_comment)) %>%
+  rename(year = review_yr,
+         srank = current_SRANK)
+
+#write.csv(t2, file.path("data", "test5.csv"), row.names = FALSE)
+
+t2 <- single %>%
+  filter(!is.na(change_yr)) %>%
+  gather("n", "year", 12:13) %>%
+  select(c(Taxonomic_Group, Scientific_Name,
+         Common_Name, current_SRANK,
+         year, code, reason, comment)) %>%
+  distinct() %>%
+  rename(srank = current_SRANK) %>%
+  mutate(GP_comment = "multiple yr reviews")
+
+t.single <- rbind(t1, t2)
+
+write.csv(t.out, file.path("data", "test4.csv"), row.names = FALSE)
+
+#multiple review
+multiple <- ssdata %>% filter(nrows > 1)
+
+write.csv(multiple, file.path("data", "test4.csv"), row.names = FALSE)
+
+sp.list <- as.list(unique(multiple$Scientific_Name))
+sp.list[[1]] # convert this to purrr function
+
+m.1 <- multiple %>%
+  filter(Scientific_Name == sp.list[[1]]) %>%
+  filter(!is.na(prev_SRank)|!is.na(code))
+
+m.1.metadata <- m.1 %>%
+  select(Taxonomic_Group, Scientific_Name, Common_Name)
+
+if(length(m.1$Taxonomic_Group) == 1) {
+  time1 <- m.1 %>%
+    select(Scientific_Name, prev_SRank) %>%
+    rename(srank = prev_SRank) %>%
+    mutate(year = 9999)
+
+  time2 <- m.1 %>%
+    select(Scientific_Name, current_SRANK, code,
+         reason, comment, change_yr) %>%
+    rename(srank = current_SRANK,
+         year = change_yr)
+
+library(gtools)
+out <- smartbind(time2, time1)
+m.1.out <- left_join(m.1.metadata, out)
+
+if(current)
+
+# if current_SRank == new_SRank
+
+
+#if(length(m.1$Taxonomic_Group) == 1) {
+#  t1 <- m.1 %>%
+#    gather("n", "year", 12:13)
+
+  }else {print "fix this still"}
+
+
+
+
+write.csv(m.1, file.path("data", "test6.csv"), row.names = FALSE)
+
+
+
+
+%>%
+  mutate(GP_comment = "initial review?") %>%
+  select(c(Taxonomic_Group, Scientific_Name,
+           Common_Name,ELCODE, current_SRANK, BC_LIST,
+           review_yr, code, reason, comment, GP_comment)) %>%
+  rename(year = review_yr)
+
+
+
+write.csv(t1, file.path("data", "test4.csv"), row.names = FALSE)
+
+
 
 # filter the duplicates with NA but keep real NA's # not working
 #dup <- ssdata %>%
@@ -105,20 +217,6 @@ mdata2 <- multi.ssdata %>%
            ch_entry_yr, code, reason, comment))
 
 
-# To estimate contracting details:
-
-# 1) number of native species per taxanomic_group
-data_summary <- sdata %>%
-  group_by(Taxonomic_Group) %>%
-  summarise(sp.no = length(unique(Scientific_Name)))
-
-no_status <- sdata %>%
-  group_by(Taxonomic_Group) %>%
-  filter(is.na(rank_review_date)) %>%
-  filter(BC_LIST == "No Status") %>%
-  summarise(no.status.sp = length(unique(Scientific_Name)))
-
-data_summary = left_join(data_summary, no_status)
 
 
 # Note: seems like there is duplicates in the data set (evrything with an ID is duplicated...??)
