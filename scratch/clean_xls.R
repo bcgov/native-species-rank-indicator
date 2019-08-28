@@ -87,7 +87,6 @@ ssdata <- sdata %>%
          current_SRANK, BC_LIST, prev_SRank, new_SRank, code,
          reason, comment, review_yr, change_yr, ch_entry_yr)
 
-
 # test data set with molluscs
 ssdata <- ssdata %>%
   filter(Taxonomic_Group == "Molluscs")
@@ -101,11 +100,9 @@ ssdata.sum <- ssdata %>%
 ssdata <- ssdata %>%
   left_join(ssdata.sum)
 
-# filter out species with only one entry line
-
+# filter out species with a single rank change ---------
 single <- ssdata %>% filter(nrows == 1)
 
-#single review
 t1 <- single %>%
   filter(is.na(change_yr)) %>%
   mutate(GP_comment = "initial review?") %>%
@@ -115,7 +112,7 @@ t1 <- single %>%
   rename(year = review_yr,
          srank = current_SRANK)
 
-#write.csv(t2, file.path("data", "test5.csv"), row.names = FALSE)
+    #write.csv(t2, file.path("data", "test5.csv"), row.names = FALSE)
 
 t2 <- single %>%
   filter(!is.na(change_yr)) %>%
@@ -129,16 +126,16 @@ t2 <- single %>%
 
 t.single <- rbind(t1, t2)
 
-write.csv(t.out, file.path("data", "test4.csv"), row.names = FALSE)
+    #write.csv(t.out, file.path("data", "test4.csv"), row.names = FALSE)
 
-#multiple review
+# filter out species with a single rank change ---------
 multiple <- ssdata %>% filter(nrows > 1)
 
-write.csv(multiple, file.path("data", "test4.csv"), row.names = FALSE)
+    #write.csv(multiple, file.path("data", "test4.csv"), row.names = FALSE)
 
 sp.list <- as.list(unique(multiple$Scientific_Name))
-sp.list[[1]] # convert this to purrr function
 
+# convert this to purrr function
 m.1 <- multiple %>%
   filter(Scientific_Name == sp.list[[1]]) %>%
   filter(!is.na(prev_SRank)|!is.na(code))
