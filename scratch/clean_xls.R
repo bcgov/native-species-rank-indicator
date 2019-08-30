@@ -22,7 +22,7 @@ library(envreportutils)
 library(stringr)
 library(purrr)
 library(lubridate)
-
+library(gtools)
 
 #excel_file <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019"),
@@ -87,6 +87,11 @@ ssdata <- sdata %>%
          current_SRANK, BC_LIST, prev_SRank, new_SRank, code,
          reason, comment, review_yr, change_yr, ch_entry_yr)
 
+# set up empty data frame to write into
+out <- data.frame(Taxonomic_Group = NA, Scientific_Name=NA,
+             Common_Name = NA, srank = NA, year = NA,
+             code = NA, reason = NA, comment = NA, GP_comment = NA)
+
 # test data set with molluscs
 ssdata <- ssdata %>%
   filter(Taxonomic_Group == "Molluscs")
@@ -112,7 +117,7 @@ t1 <- single %>%
   rename(year = review_yr,
          srank = current_SRANK)
 
-    #write.csv(t2, file.path("data", "test5.csv"), row.names = FALSE)
+#write.csv(t1, file.path("data", "test1.csv"), row.names = FALSE)
 
 t2 <- single %>%
   filter(!is.na(change_yr)) %>%
@@ -124,44 +129,58 @@ t2 <- single %>%
   rename(srank = current_SRANK) %>%
   mutate(GP_comment = "multiple yr reviews")
 
-t.single <- rbind(t1, t2)
+t.single <- bind_rows(t1, t2)
+out <- bind_rows(out,t.single)
 
-    #write.csv(t.out, file.path("data", "test4.csv"), row.names = FALSE)
+ # write.csv(t.single, file.path("data", "test4.csv"), row.names = FALSE)
 
 # filter out species with a single rank change ---------
 multiple <- ssdata %>% filter(nrows > 1)
 
-    #write.csv(multiple, file.path("data", "test4.csv"), row.names = FALSE)
+#write.csv(multiple, file.path("data", "test2.csv"), row.names = FALSE)
 
-sp.list <- as.list(unique(multiple$Scientific_Name))
+#sp.list <- as.list(unique(multiple$Scientific_Name)) # for future purr function
+sp.names <- unique(multiple$Scientific_Name)
+
+#sp.names <- sp.names[1] #test set
 
 # convert this to purrr function
-m.1 <- multiple %>%
-  filter(Scientific_Name == sp.list[[1]]) %>%
-  filter(!is.na(prev_SRank)|!is.na(code))
 
-m.1.metadata <- m.1 %>%
-  select(Taxonomic_Group, Scientific_Name, Common_Name)
+for(i in sp.names){
+  print(i)
+ # i = sp.names[1]
+  m.1 <- multiple %>%
+    filter(Scientific_Name == i) %>%
+    filter(!is.na(prev_SRank)|!is.na(code))
 
-if(length(m.1$Taxonomic_Group) == 1) {
-  time1 <- m.1 %>%
-    select(Scientific_Name, prev_SRank) %>%
-    rename(srank = prev_SRank) %>%
-    mutate(year = 9999)
+  m.1.metadata <- m.1 %>%
+    select(Taxonomic_Group, Scientific_Name, Common_Name)
 
-  time2 <- m.1 %>%
-    select(Scientific_Name, current_SRANK, code,
-         reason, comment, change_yr) %>%
-    rename(srank = current_SRANK,
-         year = change_yr)
+  if(length(m.1$Taxonomic_Group) == 1) {
 
-library(gtools)
-out <- smartbind(time2, time1)
-m.1.out <- left_join(m.1.metadata, out)
+    time1 <- m.1 %>%
+      select(Scientific_Name, prev_SRank) %>%
+      rename(srank = prev_SRank) %>%
+      mutate(year = 9999)
 
-if(current)
+    time2 <- m.1 %>%
+      select(Scientific_Name, current_SRANK, code,
+             reason, comment, change_yr) %>%
+      rename(srank = current_SRANK,
+             year = change_yr)
 
-# if current_SRank == new_SRank
+    out.time1 <- bind_rows(time2, time1)
+    m.1.out <- left_join(m.1.metadata, out.time1)
+
+    out <- bind_rows(out, m.1.out)
+
+  } else {
+    print(i)
+  }
+}
+
+
+write.csv(out, file.path("data", "test3.csv"), row.names = FALSE)
 
 
 #if(length(m.1$Taxonomic_Group) == 1) {
@@ -176,26 +195,14 @@ if(current)
 write.csv(m.1, file.path("data", "test6.csv"), row.names = FALSE)
 
 
-
-
-%>%
-  mutate(GP_comment = "initial review?") %>%
-  select(c(Taxonomic_Group, Scientific_Name,
-           Common_Name,ELCODE, current_SRANK, BC_LIST,
-           review_yr, code, reason, comment, GP_comment)) %>%
-  rename(year = review_yr)
-
-
-
-write.csv(t1, file.path("data", "test4.csv"), row.names = FALSE)
-
-
-
 # filter the duplicates with NA but keep real NA's # not working
 #dup <- ssdata %>%
 # group_by(Taxonomic_Group, Scientific_Name, prev_SRank) %>%
 #  summarise(count = length(prev_SRank))
 #write.csv(dup, file.path("data", "testd.csv"))
+
+
+
 
 multi.ssdata <- ssdata %>%
   mutate(yr_change = ifelse(current_SRANK == new_SRank,"YES","NO"))
