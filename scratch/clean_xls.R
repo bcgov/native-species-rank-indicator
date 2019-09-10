@@ -23,6 +23,7 @@ library(stringr)
 library(purrr)
 library(lubridate)
 library(gtools)
+library(readr)
 
 #excel_file <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019"),
@@ -75,6 +76,37 @@ no_status <- sdata %>%
 data_summary = left_join(data_summary, no_status)
 
 data_summary
+
+
+
+
+# read in historic data set:
+ELCODE.oi <- unique(sdata$ELCODE)
+ELCODE.oi <- ELCODE.oi[grep("IM*", ELCODE.oi)]
+
+
+
+ref <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
+ref <- ref %>%
+       select(c("Year",
+                #"Scientific Name", "English Name",
+                "Element Code", "Prov Status",
+                "Prov Status Review Date","Prov Status Change Date")) %>%
+  mutate(ELCODE = `Element Code`) %>%
+  filter(ELCODE %in% ELCODE.oi)
+
+
+xx <- full_join(sdata,ref, by = "ELCODE")
+
+length(ref$Year)
+length(sdata$Taxonomic_Group)
+
+length(xx$Taxonomic_Group)
+
+ht(ref)
+write.csv(xx, file.path("data", "test1.csv"), row.names = FALSE)
+write.csv(sdata, file.path("data", "test2.csv"), row.names = FALSE)
+
 
 
 # Reformat data table to match current data input ----------
