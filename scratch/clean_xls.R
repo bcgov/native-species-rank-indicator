@@ -78,34 +78,55 @@ data_summary = left_join(data_summary, no_status)
 data_summary
 
 
+# get a test subset
+#ELCODE.oi <- unique(sdata$ELCODE)
+#ELCODE.oi <- ELCODE.oi[grep("^*IM", ELCODE.oi)]
 
+# read in historic data set file
 
-# read in historic data set:
-ELCODE.oi <- unique(sdata$ELCODE)
-ELCODE.oi <- ELCODE.oi[grep("IM*", ELCODE.oi)]
+hist.data <- file.path(
+  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
+           "BCSEE_Plants_Animals.csv"
+  )
 
+ref <- read_csv(hist.data)
 
+# or from BC catalogue (currently not up to date)
 
-ref <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
+#ref <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
 ref <- ref %>%
        select(c("Year",
-                #"Scientific Name", "English Name",
+                "Scientific Name", "English Name",
                 "Element Code", "Prov Status",
                 "Prov Status Review Date","Prov Status Change Date")) %>%
   mutate(ELCODE = `Element Code`) %>%
   filter(ELCODE %in% ELCODE.oi)
 
+write.csv(ref, file.path("data", "test1.csv"), row.names = FALSE)
 
-xx <- full_join(sdata,ref, by = "ELCODE")
 
-length(ref$Year)
-length(sdata$Taxonomic_Group)
+# join the reason for change to rank change.
 
-length(xx$Taxonomic_Group)
+sdata <- sdata %>%
+  mutate(`Prov Status Review Date` = ymd(rank_review_date) ,
+         `Prov Status Change Date` = ymd(rank_change_date)) %>%
+  select(ELCODE,`Prov Status Review Date`,`Prov Status Change Date`,
+         BC_LIST, prev_SRank, new_SRank, code,
+         reason, comment)
 
-ht(ref)
-write.csv(xx, file.path("data", "test1.csv"), row.names = FALSE)
-write.csv(sdata, file.path("data", "test2.csv"), row.names = FALSE)
+
+
+
+xx <- left_join(ref, sdata, by = c("ELCODE","Prov Status Review Date",
+                "Prov Status Change Date"))
+
+
+str(ref)
+str(sdata)
+
+
+write.csv(xx, file.path("data", "test3.csv"), row.names = FALSE)
+
 
 
 
