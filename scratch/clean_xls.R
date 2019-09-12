@@ -59,6 +59,32 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
       select(Taxonomic_Group, Scientific_Name, Common_Name, everything()) %>%
       filter(! BC_LIST == "Exotic") #%>%
 
+
+# IMBIV / butterfly from lepidoptieras
+
+
+
+# species = 32 IMBIV (historical) bivalves
+# 2004 - 2010 ranks - (ANDY's formatting)
+# 2011 - 2018 historic rank changes
+# random scan data ? possible
+
+# format to year species.
+
+# 1 table for data dictionary
+# 1 table for the chnage/yrs.
+
+# minium of three rank changes
+
+# SP , year , rank , reason # comments
+
+
+
+
+
+
+
+
 # Calculate number of species per group -------------
 
 # 1) number of native species per taxanomic_group
@@ -82,6 +108,12 @@ data_summary
 #ELCODE.oi <- unique(sdata$ELCODE)
 #ELCODE.oi <- ELCODE.oi[grep("^*IM", ELCODE.oi)]
 
+
+# remove moths/ lepidoptera (only butterflies )
+
+# list of the species
+
+
 # read in historic data set file
 
 hist.data <- file.path(
@@ -102,18 +134,19 @@ ref <- ref %>%
   mutate(ELCODE = `Element Code`) %>%
   filter(ELCODE %in% ELCODE.oi)
 
-write.csv(ref, file.path("data", "test1.csv"), row.names = FALSE)
+
+unique
+
+#write.csv(ref, file.path("data", "test1.csv"), row.names = FALSE)
 
 
 # join the reason for change to rank change.
-
 sdata <- sdata %>%
   mutate(`Prov Status Review Date` = ymd(rank_review_date) ,
          `Prov Status Change Date` = ymd(rank_change_date)) %>%
   select(ELCODE,`Prov Status Review Date`,`Prov Status Change Date`,
          BC_LIST, prev_SRank, new_SRank, code,
          reason, comment)
-
 
 
 
