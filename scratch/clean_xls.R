@@ -61,10 +61,8 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
   filter(str_detect(ELCODE, 'I')) %>%
   filter(!str_detect(ELCODE, 'IMGAS'))
 
-#write.csv(sdata, file.path("data", "sdata.csv"), row.names = FALSE)
 
-
-# 1) number of native species per taxanomic_group
+# Create data summary
 
 data_summary <- sdata %>%
   group_by(Taxonomic_Group) %>%
@@ -73,7 +71,8 @@ data_summary <- sdata %>%
 data_summary # species = 32 IMBIV (historical) bivalves
 
 
-# 2) create a data dictionary for species details
+# Create a data dictionary for species details
+
 sp.key <- sdata %>%
     select("Taxonomic_Group", "Scientific_Name", "Common_Name",
            "ELCODE", "BC_LIST")
@@ -120,7 +119,19 @@ ref <- ref.0 %>%
 # 4) merge the change data to the historic
 
 xx <- left_join(ref, sp.rank, by = c("ELCODE","Prov Status Review Date",
-                                   "Prov Status Change Date"))
+                                "Prov Status Change Date"))
+
+length(xx$`Prov Status`)
+
+xx <- xx %>%
+  mutate(status = ifelse(is.na(new_SRank),
+                       `Prov Status`, new_SRank)) %>%
+  select(-new_SRank)
+
+
+#write.csv(xx, file.path("data", "test13.csv"), row.names = FALSE)
+
+
 
 
 # subset to molluscs
@@ -136,23 +147,35 @@ sp.yr.review <- xx %>%
 out <- data.frame(ELCODE = NA, status = NA, year = NA,
                   code = NA, reason = NA, comment = NA)
 
-sp.list <- unique(sp.yr.review$ELCODE)
+sp.list <- unique(sp.yr.review$ELCODE) # get list of species
 
 for(i in 1:length(sp.list)) {
-  i = 4
+  i = 2
   sp.data <- xx[xx$ELCODE == sp.list[i],]
   sp.data <- sp.data %>%
     select(ELCODE,`Prov Status Review Date`,
            `Prov Status Change Date`,`Prov Status`,
-           prev_SRank, new_SRank, everything())
+           prev_SRank, status, everything())
 
   sp.out <- sp.data %>%
     gather("foo", "year", 2:3) %>%
     select(-foo) %>%
-    mutate(status = ifelse(is.na(new_SRank),
-           `Prov Status`, new_SRank)) %>%
-    distinct() %>%
-    select(ELCODE, status, year, code, reason, comment)
+    distinct()
+
+ # mutate(status = ifelse(is.na(new_SRank),
+#           `Prov Status`, new_SRank))
+
+  if(length(unique(sp.out$year == 1))){
+    sp.out <- sp.out
+
+  } else {
+
+
+  }
+
+    sp.out <- sp.out %>%
+      distinct() %>%
+      select(ELCODE, status, year, code, reason, comment)
 
   out <- bind_rows(out, sp.out)
 
@@ -160,9 +183,6 @@ for(i in 1:length(sp.list)) {
 
 
 
-
-
-  }
 
 # get sp with single review
 single.yr <- sp.yr.review[sp.yr.review$no.record == 1, 1]
@@ -182,7 +202,7 @@ out <- bind_rows(out, single.initial)
 write.csv(single, file.path("data", "testsingle.csv"), row.names = FALSE)
 
 
-write.csv(xx, file.path("data", "test11.csv"), row.names = FALSE)
+write.csv(xx, file.path("data", "test12.csv"), row.names = FALSE)
 
 
 
