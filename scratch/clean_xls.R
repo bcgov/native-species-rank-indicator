@@ -70,25 +70,95 @@ data_summary <- sdata %>%
   group_by(Taxonomic_Group) %>%
   summarise(sp.no = length(unique(Scientific_Name)))
 
-data_summary
+data_summary # species = 32 IMBIV (historical) bivalves
+
+
+# 2) create a data dictionary for species details
+sp.key <- sdata %>%
+    select("Taxonomic_Group", "Scientific_Name", "Common_Name",
+           "ELCODE", "BC_LIST")
+
+elcode.key <- unique(sp.key$ELCODE)
+
+# 3 create a species change yr data set
+
+sp.rank <- sdata %>%
+    select("ELCODE", "rank_review_date", "rank_change_date",
+            "prev_SRank", "new_SRank" , "code", "reason", "comment") %>%
+    mutate(`Prov Status Review Date` = year(rank_review_date),
+           `Prov Status Change Date` = year(rank_change_date)) %>%
+    select(-c("rank_review_date","rank_change_date"))
+
+sp.rank <- sp.rank[rowSums(is.na(sp.rank[,2:6]))!=5,]
+
+
+# read in historic data set file
+
+hist.data <- file.path(
+  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
+  "BCSEE_Plants_Animals.csv"
+)
+
+ref.0 <- read_csv(hist.data)
+
+# or from BC catalogue (currently not up to date)
+
+#ref <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
+ref <- ref.0 %>%
+  select(c("Element Code","Prov Status",
+           "Prov Status Review Date","Prov Status Change Date")) %>%
+  mutate(ELCODE = `Element Code`,
+        `Prov Status Review Date` = year(`Prov Status Review Date`),
+        `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
+  filter(ELCODE %in% elcode.key) %>% # note sure if this is too restrictive (ie only looking for sp in data list)
+  distinct()
+
+
+#butterfly from lepidoptieras
+
+# 4) merge the change data to the historic
+
+xx <- left_join(ref, sp.rank, by = c("ELCODE","Prov Status Review Date",
+                                   "Prov Status Change Date"))
+
+# assess
+sp.yr.review <- xx %>%
+  group_by(`Element Code`) %>%
+  summarise(no.record = n())
+
+# set up empty data frame to write into
+out <- data.frame(ELCODE = NA,`Prov Status`= NA, year = NA,
+                  code = NA, reason = NA, comment = NA)
+
+# get sp with single review
+single.yr <- sp.yr.review[sp.yr.review$no.record == 1, 1]
+single.yr <- single.yr %>% pull()
+
+single <- xx %>%
+  filter(ELCODE %in% single.yr)
+
+single.initial <- single %>%
+  filter(code == 8 ) %>%
+#  mutate(year = 'Prov Status Review', # fix this..
+#         status = `Prov Status`) %>%
+  select(ELCODE, status, year,  code, reason, comment)
+
+out <- bind_rows(out, single.initial)
+
+write.csv(single, file.path("data", "testsingle.csv"), row.names = FALSE)
+
+
+write.csv(xx, file.path("data", "test11.csv"), row.names = FALSE)
 
 
 
-
-# IMBIV /
-butterfly from lepidoptieras
-
-
-
-# species = 32 IMBIV (historical) bivalves
 # 2004 - 2010 ranks - (ANDY's formatting)
 # 2011 - 2018 historic rank changes
 # random scan data ? possible
 
 # format to year species.
 
-# 1 table for data dictionary
-# 1 table for the chnage/yrs.
+
 
 # minium of three rank changes
 
@@ -97,102 +167,16 @@ butterfly from lepidoptieras
 
 
 
-
-
-
-
-# Calculate number of species per group -------------
-
-# 1) number of native species per taxanomic_group
-
-data_summary <- sdata %>%
-  group_by(Taxonomic_Group) %>%
-  summarise(sp.no = length(unique(Scientific_Name)))
-
-no_status <- sdata %>%
-  group_by(Taxonomic_Group) %>%
-  filter(is.na(rank_review_date)) %>%
-  filter(BC_LIST == "No Status") %>%
-  summarise(no.status.sp = length(unique(Scientific_Name)))
-
-data_summary = left_join(data_summary, no_status)
-
-data_summary
-
-
-# get a test subset
-#ELCODE.oi <- unique(sdata$ELCODE)
-#ELCODE.oi <- ELCODE.oi[grep("^*IM", ELCODE.oi)]
-
-
 # remove moths/ lepidoptera (only butterflies )
 
 # list of the species
 
 
-# read in historic data set file
 
-hist.data <- file.path(
-  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
-           "BCSEE_Plants_Animals.csv"
-  )
-
-ref <- read_csv(hist.data)
-
-# or from BC catalogue (currently not up to date)
-
-#ref <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
-ref <- ref %>%
-       select(c("Year",
-                "Scientific Name", "English Name",
-                "Element Code", "Prov Status",
-                "Prov Status Review Date","Prov Status Change Date")) %>%
-  mutate(ELCODE = `Element Code`) %>%
-  filter(ELCODE %in% ELCODE.oi)
-
-
-unique
-
-#write.csv(ref, file.path("data", "test1.csv"), row.names = FALSE)
-
-
-# join the reason for change to rank change.
-sdata <- sdata %>%
-  mutate(`Prov Status Review Date` = ymd(rank_review_date) ,
-         `Prov Status Change Date` = ymd(rank_change_date)) %>%
-  select(ELCODE,`Prov Status Review Date`,`Prov Status Change Date`,
-         BC_LIST, prev_SRank, new_SRank, code,
-         reason, comment)
-
-
-
-xx <- left_join(ref, sdata, by = c("ELCODE","Prov Status Review Date",
-                "Prov Status Change Date"))
-
-
-str(ref)
-str(sdata)
-
-
-write.csv(xx, file.path("data", "test3.csv"), row.names = FALSE)
-
-
-
-
-# Reformat data table to match current data input ----------
-
-ssdata <- sdata %>%
-  mutate(review_yr = year(rank_review_date),
-         change_yr = year(rank_change_date),
-         ch_entry_yr = year(change_entry_date)) %>%
-  select(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE,
-         current_SRANK, BC_LIST, prev_SRank, new_SRank, code,
-         reason, comment, review_yr, change_yr, ch_entry_yr)
 
 # set up empty data frame to write into
-out <- data.frame(Taxonomic_Group = NA, Scientific_Name=NA,
-             Common_Name = NA, srank = NA, year = NA,
-             code = NA, reason = NA, comment = NA, GP_comment = NA)
+out <- data.frame(ELCODE = NA, `Prov Status` = NA, year = NA,
+             code = NA, reason = NA, comment = NA)
 
 # test data set with molluscs
 ssdata <- ssdata %>%
