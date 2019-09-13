@@ -123,7 +123,6 @@ xx <- left_join(ref, sp.rank, by = c("ELCODE","Prov Status Review Date",
                                    "Prov Status Change Date"))
 
 
-
 # subset to molluscs
 xx <- xx %>%
 filter(str_detect(ELCODE, 'IMBIV'))
@@ -140,22 +139,14 @@ out <- data.frame(ELCODE = NA, status = NA, year = NA,
 sp.list <- unique(sp.yr.review$ELCODE)
 
 for(i in 1:length(sp.list)) {
-  i = 3
+  i = 4
   sp.data <- xx[xx$ELCODE == sp.list[i],]
   sp.data <- sp.data %>%
     select(ELCODE,`Prov Status Review Date`,
            `Prov Status Change Date`,`Prov Status`,
            prev_SRank, new_SRank, everything())
 
-  test <- sp.data %>%
-    gather("foo","n", 2:3) %>%
-    select(- foo) %>%
-    distinct() %>%
-    gather ("foo","status",2:4) %>%
-    #select(- foo) %>%
-    distinct()
-
-  test1 <- sp.data %>%
+  sp.out <- sp.data %>%
     gather("foo", "year", 2:3) %>%
     select(-foo) %>%
     mutate(status = ifelse(is.na(new_SRank),
@@ -163,49 +154,11 @@ for(i in 1:length(sp.list)) {
     distinct() %>%
     select(ELCODE, status, year, code, reason, comment)
 
-
-
-
-
-
-
-
-  out <- bind_rows(out, test)
+  out <- bind_rows(out, sp.out)
 
 }
 
-  t2 <- single %>%
-    filter(!is.na(change_yr)) %>%
-    gather("n", "year", 12:13) %>%
-    select(c(Taxonomic_Group, Scientific_Name,
-             Common_Name, current_SRANK,
-             year, code, reason, comment)) %>%
-    distinct() %>%
-    rename(srank = current_SRANK) %>%
-    mutate(GP_comment = "multiple yr reviews")
 
-
-
-
-  if (length(sp.data$ELCODE == 1)) {
-    test <- gather(sp.data, "foo","n", 3:4)
-
-
-
-  }
-
-
-  if(length(sp.data$ELCODE ==2)){
-
-    sp.review.yrs <- unique(sp.data$`Prov Status Review Date`)
-    sp.change.yrs <- unique(sp.data$`Prov Status Change Date`)
-
-    sp.out.data <- sp.data %>%
-      select(-`Element Code`)
-      mutate(year = "Prov Status Review Date")
-
-
-    }
 
 
 
