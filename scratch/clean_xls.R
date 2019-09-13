@@ -46,21 +46,37 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
                                   "rank_review_date", "rank_change_date",
                                   "change_entry_date", "prev_SRank",
                                   "new_SRank", "code", "reason", "comment"))  %>%
-      mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
-                                      ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
-                                             ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
-                                                    ifelse(startsWith(ELCODE, "AM"), "Mammals",
-                                                           ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
-                                                                  ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
-                                                                         ifelse(startsWith(ELCODE, "IIO"),"Odonata",
-                                                                                ifelse(startsWith(ELCODE, "IM"), "Molluscs",
-                                                                                                  NA))))))))) %>%
+  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
+                                  ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
+                                         ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
+                                                ifelse(startsWith(ELCODE, "AM"), "Mammals",
+                                                       ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
+                                                              ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
+                                                                     ifelse(startsWith(ELCODE, "IIO"),"Odonata",
+                                                                            ifelse(startsWith(ELCODE, "IM"), "Molluscs",
+                                                                                   NA))))))))) %>%
 
-      select(Taxonomic_Group, Scientific_Name, Common_Name, everything()) %>%
-      filter(! BC_LIST == "Exotic") #%>%
+  select(Taxonomic_Group, Scientific_Name, Common_Name, everything()) %>%
+  filter(! BC_LIST == "Exotic") %>%
+  filter(str_detect(ELCODE, 'I')) %>%
+  filter(!str_detect(ELCODE, 'IMGAS'))
+
+#write.csv(sdata, file.path("data", "sdata.csv"), row.names = FALSE)
 
 
-# IMBIV / butterfly from lepidoptieras
+# 1) number of native species per taxanomic_group
+
+data_summary <- sdata %>%
+  group_by(Taxonomic_Group) %>%
+  summarise(sp.no = length(unique(Scientific_Name)))
+
+data_summary
+
+
+
+
+# IMBIV /
+butterfly from lepidoptieras
 
 
 
