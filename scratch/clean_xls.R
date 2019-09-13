@@ -130,6 +130,26 @@ sp.yr.review <- xx %>%
 out <- data.frame(ELCODE = NA,`Prov Status`= NA, year = NA,
                   code = NA, reason = NA, comment = NA)
 
+sp.list <- unique(sp.yr.review$`Element Code`)
+
+for(i in 1:length(sp.list)) {
+  i = 1
+  sp.data <- xx[xx$ELCODE == sp.list[i],]
+
+  # if length(sp.data$ELCODE == 1) {}
+  #
+
+  if(length(sp.data$ELCODE ==2)){
+
+    sp.review.yrs <- unique(sp.data$`Prov Status Review Date`)
+    sp.change.yrs <- unique(sp.data$`Prov Status Change Date`)
+
+    }
+
+
+
+  }
+
 # get sp with single review
 single.yr <- sp.yr.review[sp.yr.review$no.record == 1, 1]
 single.yr <- single.yr %>% pull()
