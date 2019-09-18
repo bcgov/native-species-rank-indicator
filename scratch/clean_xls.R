@@ -51,12 +51,19 @@ ref <- ref.0 %>%
   mutate(ELCODE = Element_code,
          `Prov Status Review Date` = year(`Prov Status Review Date`),
          `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
-  select(-c("Element_code")) %>%
-  filter(!str_detect(ELCODE, 'P')) %>%
-  filter(!str_detect(ELCODE, "NB")) %>%
-  filter(!str_detect(ELCODE, "NL"))
+  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
+                                  ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
+                                         ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
+                                                ifelse(startsWith(ELCODE, "AM"), "Mammals",
+                                                       ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
+                                                              ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
+                                                                     ifelse(startsWith(ELCODE, "IIO"),"Odonata",
+                                                                            ifelse(startsWith(ELCODE, "IM"), "Molluscs",
+                                                                                   NA))))))))) %>%
 
+  select(-c("Element_code"))
 
+# make a subset list of sci name and elcode to update missing elcodes
 all.sp.list <- ref %>%
   select(c(Scientific_name, ELCODE)) %>%
   filter(!is.na(ELCODE)) %>%
@@ -64,11 +71,16 @@ all.sp.list <- ref %>%
 
 ref <- ref %>%
   select(-ELCODE) %>%
-  left_join( all.sp.list, by = "Scientific_name")
+  left_join(all.sp.list, by = "Scientific_name") %>%
+  filter(!is.na(Taxonomic_Group))
+
+#write.csv(ref, file.path("data", "Ref.csv"), row.names = FALSE)
+
+# may also want to split butterfly from moths ie keep IILEPP and drop IILEPG / Y/ U
 
 
-# read in the latest changes document for inverts
 
+# read in the latest changes document for inverts ------------------------------------
 
 #excel_file <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019"),
@@ -91,36 +103,10 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
                                   "rank_review_date", "rank_change_date",
                                   "change_entry_date", "prev_SRank",
                                   "new_SRank", "code", "reason", "comment"))  %>%
-  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
-                                  ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
-                                         ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
-                                                ifelse(startsWith(ELCODE, "AM"), "Mammals",
-                                                       ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
-                                                              ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
-                                                                     ifelse(startsWith(ELCODE, "IIO"),"Odonata",
-                                                                            ifelse(startsWith(ELCODE, "IM"), "Molluscs",
-                                                                                   NA))))))))) %>%
-
-  select(Taxonomic_Group, Scientific_Name, Common_Name, everything()) %>%
+  select(Scientific_Name, Common_Name, everything()) %>%
   filter(! BC_LIST == "Exotic") %>%
   filter(str_detect(ELCODE, 'I')) %>%
   filter(!str_detect(ELCODE, 'IMGAS'))
-
-
-# Create data summary
-data_summary <- sdata %>%
-  group_by(Taxonomic_Group) %>%
-  summarise(sp.no = length(unique(Scientific_Name)))
-
-data_summary # species = 32 IMBIV (historical) bivalves
-
-# Create a data dictionary for species details
-sp.key <- sdata %>%
-    select("Taxonomic_Group", "Scientific_Name", "Common_Name",
-           "ELCODE", "BC_LIST")
-
-# note this is only the species with a code change (not all species)
-elcode.key <- unique(sp.key$ELCODE)
 
 # 3) create a species change yr data set
 sp.rank <- sdata %>%
@@ -128,22 +114,49 @@ sp.rank <- sdata %>%
             "prev_SRank", "new_SRank" , "code", "reason", "comment") %>%
     mutate(`Prov Status Review Date` = year(rank_review_date),
            `Prov Status Change Date` = year(rank_change_date)) %>%
-    select(-c("rank_review_date","rank_change_date"))
-
+    select(-c("rank_review_date","rank_change_date")) %>%
+  distinct()
 sp.rank <- sp.rank[rowSums(is.na(sp.rank[,2:6]))!=5,]
 
+sp.oi <- unique(sp.rank$ELCODE)
 
 
 
 
-#butterfly from lepidoptieras
+# add the recent changes to historic changes -----------------------------------
+ref.oi <- ref %>%
+  filter(ELCODE %in% sp.oi) %>%
+  filter(str_detect(ELCODE, 'IMBIV')) %>% # subset to smaller group
+  select(-c("Common_name", "Taxonomic_Group","Year", "Scientific_name")) %>%
+  distinct()
 
-# 4) merge the change data to the historic changes
+xx <- ref %>%
+  filter(s)
 
-xx <- left_join(sub.species , sp.rank, by = c("ELCODE","Prov Status Review Date",
-                                "Prov Status Change Date"))
 
-xx <- xx %>%
+sp.rank <- sp.rank %>%
+  filter(str_detect(ELCODE, 'IMBIV')) %>%
+  distinct()
+
+
+sp.ref <- left_join(ref.oi, sp.rank, by = c("ELCODE","Prov Status Review Date",
+                                "Prov Status Change Date", "Prov_Status" = "new_SRank"))
+
+%>%
+  distinct() %>%
+  select(ELCODE, everything())
+
+
+
+write.csv(sp.rank, file.path("data", "t1.csv"), row.names = FALSE)
+
+write.csv(ref.oi, file.path("data", "t2.csv"), row.names = FALSE)
+
+
+
+
+
+sp.ref <- sp.ref %>%
   mutate(status = ifelse(is.na(new_SRank), Prov_Status, new_SRank)) %>%
   select(-new_SRank)
 
