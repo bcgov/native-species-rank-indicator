@@ -25,6 +25,52 @@ library(lubridate)
 library(gtools)
 library(readr)
 
+
+# read in historic data set file and format
+
+#ref.0  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
+# or
+
+hist.data <- file.path(
+  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
+  "BCSEE_Plants_Animals_final.csv"
+)
+
+ref.0 <- read_csv(hist.data ,
+                  col_names = c("Year", "Scientific_name", "foo", "Common_name",
+                                "foo1", "foo2", "Element_code", "foo3", "foo4",
+                                "Prov_Status", "Prov Status Review Date",
+                                "Prov Status Change Date",
+                                paste0("foo1", seq_len(48 - 12))))
+ref.0 <- ref.0[-1,]
+
+ref <- ref.0 %>%
+  select(c("Year", "Scientific_name", "Common_name","Element_code",
+           "Prov_Status", "Prov Status Review Date",
+           "Prov Status Change Date")) %>%
+  mutate(ELCODE = Element_code,
+         `Prov Status Review Date` = year(`Prov Status Review Date`),
+         `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
+  select(-c("Element_code")) %>%
+  filter(!str_detect(ELCODE, 'P')) %>%
+  filter(!str_detect(ELCODE, "NB")) %>%
+  filter(!str_detect(ELCODE, "NL"))
+
+
+all.sp.list <- ref %>%
+  select(c(Scientific_name, ELCODE)) %>%
+  filter(!is.na(ELCODE)) %>%
+  distinct()
+
+ref <- ref %>%
+  select(-ELCODE) %>%
+  left_join( all.sp.list, by = "Scientific_name")
+
+
+# read in the latest changes document for inverts
+
+
+
 #excel_file <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019"),
 #           "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.xlsx"
@@ -88,70 +134,19 @@ sp.rank <- sdata %>%
 sp.rank <- sp.rank[rowSums(is.na(sp.rank[,2:6]))!=5,]
 
 
-# read in historic data set file and format
-
-#ref.0  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
-# or
-
-hist.data <- file.path(
-  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
-  "BCSEE_Plants_Animals_final.csv"
-)
-
-ref.0 <- read_csv(hist.data ,
-                  col_names = c("Year", "Scientific_name", "foo", "Common_name",
-                                "foo1", "foo2", "Element_code", "foo3", "foo4",
-                                "Prov_Status", "Prov Status Review Date",
-                                "Prov Status Change Date",
-                                paste0("foo1", seq_len(48 - 12))))
-ref.0 <- ref.0[-1,]
-
-all.sp.list <- ref.0 %>%
-  select(c(Scientific_name, Element_code)) %>%
-  filter(!is.na(Element_code)) %>%
-  distinct()
-
-
-ref <- ref.0 %>%
-  select(c("Year", "Scientific_name", "Common_name",
-         "Prov_Status", "Prov Status Review Date",
-         "Prov Status Change Date"))
-
-ref <- left_join(ref, all.sp.list, by = "Scientific_name")
-
-# this is all species list (including plants)
-
-all.species <- ref %>%
-  mutate(ELCODE = `Element_code`,
-        `Prov Status Review Date` = year(`Prov Status Review Date`),
-        `Prov Status Change Date` = year(`Prov Status Change Date`))
-
-sub.species <- all.species %>%
-  filter(ELCODE %in% elcode.key) %>% # note sure if this is too restrictive (ie only looking for sp in data list)
-  select(-Element_code) %>%
-  distinct()
-
 
 
 
 #butterfly from lepidoptieras
 
-# 4) merge the change data to the historic
+# 4) merge the change data to the historic changes
 
-xx <- left_join(ref, sp.rank, by = c("ELCODE","Prov Status Review Date",
+xx <- left_join(sub.species , sp.rank, by = c("ELCODE","Prov Status Review Date",
                                 "Prov Status Change Date"))
 
-length(xx$`Prov Status`)
-
 xx <- xx %>%
-  mutate(status = ifelse(is.na(new_SRank),
-                       `Prov Status`, new_SRank)) %>%
+  mutate(status = ifelse(is.na(new_SRank), Prov_Status, new_SRank)) %>%
   select(-new_SRank)
-
-
-#write.csv(xx, file.path("data", "test13.csv"), row.names = FALSE)
-
-
 
 
 # subset to molluscs
