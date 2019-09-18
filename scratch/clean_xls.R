@@ -70,7 +70,6 @@ ref <- ref %>%
 # read in the latest changes document for inverts
 
 
-
 #excel_file <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019"),
 #           "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.xlsx"
