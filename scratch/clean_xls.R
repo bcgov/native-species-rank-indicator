@@ -63,24 +63,21 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
 
 
 # Create data summary
-
 data_summary <- sdata %>%
   group_by(Taxonomic_Group) %>%
   summarise(sp.no = length(unique(Scientific_Name)))
 
 data_summary # species = 32 IMBIV (historical) bivalves
 
-
 # Create a data dictionary for species details
-
 sp.key <- sdata %>%
     select("Taxonomic_Group", "Scientific_Name", "Common_Name",
            "ELCODE", "BC_LIST")
 
+# note this is only the species with a code change (not all species)
 elcode.key <- unique(sp.key$ELCODE)
 
-# 3 create a species change yr data set
-
+# 3) create a species change yr data set
 sp.rank <- sdata %>%
     select("ELCODE", "rank_review_date", "rank_change_date",
             "prev_SRank", "new_SRank" , "code", "reason", "comment") %>%
@@ -91,27 +88,50 @@ sp.rank <- sdata %>%
 sp.rank <- sp.rank[rowSums(is.na(sp.rank[,2:6]))!=5,]
 
 
-# read in historic data set file
+# read in historic data set file and format
+
+#ref.0  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
+# or
 
 hist.data <- file.path(
   soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
-  "BCSEE_Plants_Animals.csv"
+  "BCSEE_Plants_Animals_final.csv"
 )
 
-ref.0 <- read_csv(hist.data)
+ref.0 <- read_csv(hist.data ,
+                  col_names = c("Year", "Scientific_name", "foo", "Common_name",
+                                "foo1", "foo2", "Element_code", "foo3", "foo4",
+                                "Prov_Status", "Prov Status Review Date",
+                                "Prov Status Change Date",
+                                paste0("foo1", seq_len(48 - 12))))
+ref.0 <- ref.0[-1,]
 
-# or from BC catalogue (currently not up to date)
-
-#ref <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
-ref <- ref.0 %>%
-  select(c("Element Code","Prov Status",
-           "Prov Status Review Date","Prov Status Change Date")) %>%
-  mutate(ELCODE = `Element Code`,
-        `Prov Status Review Date` = year(`Prov Status Review Date`),
-        `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
-  filter(ELCODE %in% elcode.key) %>% # note sure if this is too restrictive (ie only looking for sp in data list)
-  select(-`Element Code`) %>%
+all.sp.list <- ref.0 %>%
+  select(c(Scientific_name, Element_code)) %>%
+  filter(!is.na(Element_code)) %>%
   distinct()
+
+
+ref <- ref.0 %>%
+  select(c("Year", "Scientific_name", "Common_name",
+         "Prov_Status", "Prov Status Review Date",
+         "Prov Status Change Date"))
+
+ref <- left_join(ref, all.sp.list, by = "Scientific_name")
+
+# this is all species list (including plants)
+
+all.species <- ref %>%
+  mutate(ELCODE = `Element_code`,
+        `Prov Status Review Date` = year(`Prov Status Review Date`),
+        `Prov Status Change Date` = year(`Prov Status Change Date`))
+
+sub.species <- all.species %>%
+  filter(ELCODE %in% elcode.key) %>% # note sure if this is too restrictive (ie only looking for sp in data list)
+  select(-Element_code) %>%
+  distinct()
+
+
 
 
 #butterfly from lepidoptieras
