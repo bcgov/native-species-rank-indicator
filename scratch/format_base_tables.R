@@ -100,7 +100,11 @@ col.names.fn <- function(x) {
   new.col.names
 }
 
-new.cols.to.add <- unlist(map(oyears, col.names.fn))
+new.cols.to.add <- as.vector(unlist(map(oyears, col.names.fn)))
+
+odata[, new.cols.to.add] <- NA
+
+
 
 # add this to the end of data frame and export
 
