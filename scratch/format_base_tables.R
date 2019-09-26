@@ -63,35 +63,9 @@ ref <- ref.0 %>%
 
   select(-c("Element_code"))
 
-# make a subset list of sci name and elcode to update missing elcodes
-#all.sp.list <- ref %>%
-#  select(c(Scientific_name, ELCODE)) %>%
-#  distinct()
+# Run through each group and add pre2004 to historic data sets.
 
-group.oi <- c("Odonata", "Lepidoptera", "Molluscs")
-
-for(i in group.oi) {
-
-gref <-   ref %>%
-  filter(Taxonomic_Group ==  i) %>%
-  select(ELCODE, Scientific_name, Year, Prov_Status) %>%
-  spread(Year, Prov_Status) %>%
-  distinct()
-
-## add the other column names using years as reference.
-#years <- unique(gref$Year)
-#do.call(paste0, Map(strrep, names(df), df))
-
-write.csv(gref, file.path("data",paste0(i, "_historic.csv",sep = "")), row.names = FALSE)
-
-}
-
-# read in and check
-
-# Odonata
-odata<- read_csv(file.path("data", "Odonata_historic.csv", sep = ""))
-oyears <- as.list(names(odata)[str_detect(names(odata),"2")])
-
+# function to add rank columns per
 col.names.fn <- function(x) {
   adjname <- paste0(x,"_Adj_SRank")
   adjcode <- paste0(x,"_Adj_SRank_Code")
@@ -100,13 +74,43 @@ col.names.fn <- function(x) {
   new.col.names
 }
 
+group.oi <- c("Odonata", "Lepidoptera", "Molluscs")
+
+for(i in group.oi) {
+
+# i = group.oi[1]
+#
+#gref <-   ref %>%
+#  filter(Taxonomic_Group ==  i) %>%
+#  select(ELCODE, Scientific_name, Year, Prov_Status) %>%
+#  spread(Year, Prov_Status) %>%
+#  distinct()
+
+gref <- read_csv(file.path("data", paste(i,"_historic.csv", sep = "")))
+
+# read in the per 2004 data
+old.data <- read_excel(file.path("data", "Compiled_pre2004",
+                                 paste(i ,"_pre2004.xlsx",sep = "")))
+
+data_all <- full_join(gref, old.data)
+  select(ELCODE, everything())
+
+# get the years of interest
+oyears <- as.list(names(data_all)[str_detect(names(data_all), c("1","2"))])
+
+# create the new columns using fnc and add to data frame
 new.cols.to.add <- as.vector(unlist(map(oyears, col.names.fn)))
 
-odata[, new.cols.to.add] <- NA
+odata_all[, new.cols.to.add] <- NA
 
 
+## add the other column names using years as reference.
+#years <- unique(gref$Year)
+#do.call(paste0, Map(strrep, names(df), df))
 
-# add this to the end of data frame and export
+write.csv(gref, file.path("data",paste0(i, "_historic.csv",sep = "")), row.names = FALSE)
+
+}
 
 
 
