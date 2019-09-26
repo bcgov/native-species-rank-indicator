@@ -31,8 +31,12 @@ library(readr)
 #ref.0  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
 # or
 
-hist.data <- file.path(
-  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
+#hist.data <- file.path(
+#  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
+#  "BCSEE_Plants_Animals_final.csv"
+#)
+
+hist.data <- file.path(("data"),
   "BCSEE_Plants_Animals_final.csv"
 )
 
@@ -78,37 +82,39 @@ group.oi <- c("Odonata", "Lepidoptera", "Molluscs")
 
 for(i in group.oi) {
 
-# i = group.oi[1]
-#
-#gref <-   ref %>%
-#  filter(Taxonomic_Group ==  i) %>%
-#  select(ELCODE, Scientific_name, Year, Prov_Status) %>%
-#  spread(Year, Prov_Status) %>%
-#  distinct()
+ i = group.oi[2]
 
-gref <- read_csv(file.path("data", paste(i,"_historic.csv", sep = "")))
+gref <- ref %>%
+  filter(Taxonomic_Group ==  i) %>%
+  select(ELCODE, Scientific_name, Year, Prov_Status) %>%
+  spread(Year, Prov_Status) %>%
+  distinct()
+
 
 # read in the per 2004 data
-old.data <- read_excel(file.path("data", "Compiled_pre2004",
+pre2004 <- read_excel(file.path("data", "Compiled_pre2004",
                                  paste(i ,"_pre2004.xlsx",sep = "")))
 
-data_all <- full_join(gref, old.data)
+data_all <- full_join(gref, pre2004) %>%
   select(ELCODE, everything())
 
 # get the years of interest
-oyears <- as.list(names(data_all)[str_detect(names(data_all), c("1","2"))])
+oyears1 <- names(data_all)[str_detect(names(data_all), c("1"))]
+oyears2 <- names(data_all)[str_detect(names(data_all), c("2"))]
+oyears <- unique(c(oyears1, oyears2))
+oyears <- as.list(as.character(sort(as.numeric(oyears))))
 
 # create the new columns using fnc and add to data frame
 new.cols.to.add <- as.vector(unlist(map(oyears, col.names.fn)))
 
-odata_all[, new.cols.to.add] <- NA
+data_all[, new.cols.to.add] <- NA
 
+groups.to.keep <- c("IIODO", "ILEP", "IMBIV")
 
-## add the other column names using years as reference.
-#years <- unique(gref$Year)
-#do.call(paste0, Map(strrep, names(df), df))
+data_all <- data_all %>%
+  filter(str_detect(ELCODE, paste(groups.to.keep , collapse = "|")))
 
-write.csv(gref, file.path("data",paste0(i, "_historic.csv",sep = "")), row.names = FALSE)
+write.csv(data_all, file.path("data",paste0(i, "_compiled.csv",sep = "")), row.names = FALSE)
 
 }
 
