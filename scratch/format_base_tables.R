@@ -143,18 +143,22 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
   filter(str_detect(ELCODE, 'I')) %>%
   filter(!str_detect(ELCODE, 'IMGAS'))
 
+#generate Lep output
 leps <- sdata %>%
-  filter(str_detect(ELCODE, 'IMBIV'))
+  filter(str_detect(ELCODE, 'ILEP'))
 
 write.csv(leps, file.path("data", "Contractor_datasets", "Lepidoptera",
                           "Lepidoptera_Rank_change_reason.csv"))
+#generate odo output
+odo <- sdata %>%
+  filter(str_detect(ELCODE, 'IIODO'))
 
-odo <- sdata
+write.csv(odo, file.path("data", "Contractor_datasets", "Odonata",
+                          "Odonata_rank_change_reason.csv"))
 
-  gref <- ref %>%
-    filter(Taxonomic_Group ==  i) %>%
-    select(ELCODE, Scientific_name, Year, Prov_Status) %>%
-    spread(Year, Prov_Status) %>%
-    mutate(Scientific_name = tolower(Scientific_name)) %>%
-    distinct()
+#generate odo output
+mol <- sdata %>%
+  filter(str_detect(ELCODE, 'IMBIV'))
 
+write.csv(mol, file.path("data", "Contractor_datasets", "Molluscs",
+                         "Molluscs_rank_change_reason.csv"))
