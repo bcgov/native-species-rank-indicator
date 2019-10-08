@@ -1,18 +1,23 @@
 ---
-topic: # One of: "air", "water", "plants-and-animals", "climate-change", "land", "sustainability"
-title: "Indicator Title"
-bibliography: example.bib
+topic:  "plants-and-animals"
+title: "Trends in Status of Native Species in B.C. (1992 - 2019)"
 output: envreportutils.internal::print_ver
 params:
   draft: TRUE
 ---
-
 <!--
-Instructions:
+# Copyright 2019 Province of British Columbia
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
 
-If you don't have a bibliography, delete the bibliography line in the YAML header.
-If you do have a bibliography, insert the filename. In-text citations are done as:
-[@Moe-etal-1999]. End the document with the bibliography heading (e.g., # References).
 -->
 
 ```{r echo = FALSE, include=params$draft, results='asis'}
@@ -35,15 +40,32 @@ cat("\\begin{center}
 \\end{center}")
 ```
 
-Lorem ipsum dolor sit amet, maximus risus, imperdiet mi ac. Vitae tempor ultrices, odio euismod fames tempus at, sodales, eu lacus. Sit ac pellentesque eget ligula sociis mi sociis taciti sed nec. Sodales leo nam himenaeos a et. Porttitor adipiscing risus donec rhoncus est ut eget eu. Feugiat pellentesque donec, vitae neque. Sit faucibus eget nec quis turpis orci. Et, ultrices aptent magnis.
 
 
-```{r echo=FALSE, message=FALSE}
+
+```{r setup,  echo=FALSE, message=FALSE}
 library(ggplot2)
-ggplot(mtcars, aes(x = hp, y = mpg)) + 
-  geom_point() + 
-  geom_smooth()
+
+
+
+
+
+
+
 ```
+
+
+# Within B.C. species are ranked on a scale of S1 (high conservation concern) to S5 low concervation concern)
+
+# We assessed conservation  Conservation Status Index assessed the overal conservation status of a group of species from 1992 - 2018 by calculating a conservation status index. 
+
+The Conservation Status Index, shown in the graph below, reflects the overall conservation status of a group of species at a given time, and the trend in the Conservation Status Index over time is an indication of how the overall status of a group of species is changing.
+
+The status of most vertebrate groups in British Columbia has declined since 1992—the year the B.C. Conservation Data Centre began assessing the status of species in British Columbia.
+Marine mammals are on the rebound! Several species which were heavily hunted in the 1800s and early 1900s have recovering populations.
+The overall decline in the status of birds was masked in the early 1990s by dramatic increases of several species that expanded their natural range into B.C.
+B.C. vertebrate groups have different levels of natural rarity. For example, most of B.C.'s reptiles and amphibians are much rarer than the majority of B.C.'s birds, and thus the Conservation Status Index for the group is lower overall.
+
 
 Cum vivamus penatibus sed mus fringilla non sociosqu taciti ut. Sed, semper lacus justo ultricies penatibus praesent. Tortor vivamus fermentum libero, libero urna montes orci luctus ligula? Tellus et mauris sed a in lacinia imperdiet. Sed nec penatibus sed at mauris etiam. Interdum morbi arcu vitae lectus cubilia eros, imperdiet felis. Nisl, lacinia vel, nisl, rutrum ac, elementum felis. Dui ante eros ex mi, interdum velit accumsan sociosqu, tempus. Erat vulputate potenti nascetur. Malesuada, curabitur, leo himenaeos, molestie euismod sit. In vitae sollicitudin adipiscing commodo.
 
