@@ -34,7 +34,7 @@ hist.data <- hist.data %>%
 
 
 
-# read in the latest data catalogue from CDC ------------------------------------------------------------
+# read in the latest data catalogue from CDC (2012 - 2018) ------------------------------------------------------------
 
 new.data <- file.path(("data"),
                        "BCSEE_Plants_Animals_final.csv"
@@ -104,8 +104,7 @@ head(all)
 
 # get last ranked value
 all <- all %>%
-  group_by(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE,
-           `2010`,`2011`,`2013`,`2017`,`2016`,`2018` ) %>%
+  group_by(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE) %>%
   mutate(last_rank = ifelse(!is.na(`2018`), `2018`,
                             ifelse(!is.na(`2017`),`2017`,
                                    ifelse(!is.na(`2016`), `2016`,
@@ -172,9 +171,10 @@ sdata <- sdata %>%
 
 # get list of current ranks
 
-ranks.2018 <- sdata %>%
+ranks.changes <- sdata %>%
   select(c(ELCODE,Scientific_Name, current_SRANK)) %>%
   distinct() %>%
+  mutate(Scientific_Name = tolower(Scientific_Name)) %>%
   filter(!is.na(current_SRANK))
 
 
@@ -183,18 +183,18 @@ ranks.2018 <- sdata %>%
 sp.checks <- all %>%
   select(ELCODE, Scientific_Name, last_rank) %>%
   distinct() %>%
-  full_join(ranks.2018) %>%
-  mutate(sp.to.check = ifelse(current_SRANK == '2018', NA, TRUE)) %>%
+  left_join(ranks.changes) %>%
+  mutate(sp.to.check = ifelse(current_SRANK == last_rank, NA, TRUE)) %>%
   filter(is.na(sp.to.check))
 
-sp.checks <- sp.checks[rowSums(is.na(sp.checks[,3:5]))!=3,]
+sp.checks <- sp.checks[rowSums(is.na(sp.checks[,5:7]))!=3,]
+sp.checks %>%  drop_na(sp.to.check)
 
+# all matching!
 
-sp.checks <- full_join(sp.checks, sp.to.check.1)
-sp.to.check.1
+# just need to check the species with different 2010 rankings
 
-
-write.csv(sp.checks, file.path("data", "Species_to_check_manually.csv"), row.names = FALSE)
+write.csv(sp.to.check, file.path("data", "Species_to_check_manually.csv"), row.names = FALSE)
 
 
 ## Manually verify data
@@ -203,14 +203,35 @@ write.csv(sp.checks, file.path("data", "Species_to_check_manually.csv"), row.nam
 # check species within the "species to check manually.csv
 # check 2012x and 2012y and where different
 # check the sci names with no ELCODE.
-# save as "verified_data.csv" with headings:
+
+# save as "consolidated_data_verified.csv"
+
+
+
 
 
 
 # Format the years of the data for each group
 
+vdata <- read_csv(file.path("data", "consolidated_output_verified.csv"))
+
+vdata <- vdata %>%
+  gather("Year", "SRank", 5:24) %>%
+  drop_na("SRank")
 
 
+get.years <- vdata %>%
+  group_by(Taxonomic_Group, Year) %>%
+  summarise(count = n())
 
+
+# still need to format years:
+
+# group the years per type
+# Amphibian       : 1992, 1998, 2002, 2008, 2012, 2018
+# breeding birds  : 1992, 1997, 2001, 2006, 2012,
+# Mammals
+
+saveRDS(vdata, file = file.path("data","indata.r"))
 
 
