@@ -26,33 +26,72 @@ library(gtools)
 library(readr)
 
 
-# read in historic data set file and format
+# read in data set already formatted (1992 - 2012)
 
-#ref.0  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
-# or
+ref.0  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
+
+# read in latest data cut for verts
 
 #hist.data <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
 #  "BCSEE_Plants_Animals_final.csv"
 #)
-
-hist.data <- file.path(("data"),
-                       "BCSEE_Plants_Animals_final.csv"
+excel_file <- file.path(("data"),
+                       "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.xlsx"
 )
 
+sdata <- read_excel(excel_file, sheet = "Query Output",
+                    range = "A2:O2731",
+                    col_types = c("numeric", "text", "numeric",
+                                  rep("text", 4), rep("date",3),
+                                  rep("text", 2), "numeric",
+                                  rep("text", 2)),
+                    col_names = c("ID", "ELCODE", "EST_ID",
+                                  "Scientific_Name", "Common_Name",
+                                  "current_SRANK", "BC_LIST",
+                                  "rank_review_date", "rank_change_date",
+                                  "change_entry_date", "prev_SRank",
+                                  "new_SRank", "code", "reason", "comment"))  %>%
+  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
+                                  ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
+                                         ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
+                                                ifelse(startsWith(ELCODE, "AM"), "Mammals",
+                                                       ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
+                                                              ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
+                                                                     ifelse(startsWith(ELCODE, "IIO"),"Odonata",
+                                                                            ifelse(startsWith(ELCODE, "IM"), "Molluscs",
+                                                                                   NA))))))))) %>%
+  select(Taxonomic_Group, Scientific_Name, Common_Name, everything())
 
-ref.0 <- read_csv(hist.data ,
-                  col_names = c("Year", "Scientific_name", "foo", "Common_name",
-                                "foo1", "foo2", "Element_code", "foo3", "foo4",
-                                "Prov_Status", "Prov Status Review Date",
-                                "Prov Status Change Date",
-                                paste0("foo1", seq_len(48 - 12))))
+# format dates and subset to vertebrates
+
+sdata <- sdata %>%
+  mutate(review_yr = year(rank_review_date),
+         change_yr = year(rank_change_date),
+         ch_entry_yr = year(change_entry_date)) %>%
+  select(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE,
+         current_SRANK, BC_LIST, prev_SRank, new_SRank, code,
+         reason, comment, review_yr, change_yr, ch_entry_yr)
+
+
+
+
+
+
+
+
+
+
+
+
+
 ref.0 <- ref.0[-1,]
 
 ref <- ref.0 %>%
-  select(c("Year", "Scientific_name", "Common_name","Element_code",
-           "Prov_Status", "Prov Status Review Date",
-           "Prov Status Change Date")) %>%
+  select(c( "ELCODE", "Scientific_name", "Common_name",
+            "SRank", "Review_Date", "Change_Date", "prevSRank","NewRank",
+            "code", "reason", "comment"))
+ref.0 <- ref.0[-1,] %>%
   mutate(ELCODE = Element_code,
          `Prov Status Review Date` = year(`Prov Status Review Date`),
          `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
@@ -448,37 +487,6 @@ twice.assess.with.change.start <- twice.assess %>%
          current_SRANK = prev_SRank,
          comment = "unknown start date") %>%
   select(-prev_SRank)
-
-# extract current ranking ~ known date and reason
-twice.assess.with.change.end <- twice.assess %>%
-  filter(!is.na(change_entry_date)) %>%
-  select(c(Taxonomic_Group, Scientific_Name,
-           Common_Name, change_entry_date,
-           current_SRANK, code, reason)) %>%
-  mutate(year = year(change_entry_date)) %>%
-  select(-change_entry_date)
-
-
-data_sum <- bind_rows(single.assess,
-                      twice.assess.no.change,
-                      twice.assess.with.change.start,
-                      twice.assess.with.change.end)
-
-data_sum
-
-#write.csv(data_sum, file.path("data", "odo_test.csv"))
-write.csv(data_sum, file.path("data", "allgroups_test.csv"))
-
-
-# 2) How many changed? + time stamp
-
-
-# 3) reason for change - when not genuine change
-cdata <- data_sum %>%
-  group_by( Taxonomic_Group, reason, comment) %>%
-  summarise(count = n())
-
-
 
 
 
