@@ -20,9 +20,7 @@ library(dplyr)
 library(tidyr)
 library(envreportutils)
 library(stringr)
-#library(purrr)
 library(lubridate)
-#library(gtools)
 library(readr)
 
 
@@ -31,8 +29,9 @@ library(readr)
 hist.data  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
 
 hist.data <- hist.data %>%
-  mutate(Scientific_name = tolower(Scientific_Name)) %>%
+  mutate(Scientific_Name = tolower(Scientific_Name)) %>%
   spread(Year, SRank)
+
 
 
 # read in the latest data catalogue from CDC ------------------------------------------------------------
@@ -73,7 +72,7 @@ new  <- new.0 %>%
                                                                                    NA))))))))) %>%
 
   select(-c("Element_code")) %>%
-  mutate(Scientific_name = tolower(Scientific_name))
+  mutate(Scientific_Name = tolower(Scientific_name))
 
 # select groups of interest and reformat
 
@@ -81,48 +80,53 @@ group.oi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Rep
 
 new <- new %>%
   filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|"))) %>%
-  select(Scientific_name, Year, Prov_Status) %>%
+  select(Scientific_Name, Year, Prov_Status, ELCODE) %>%
   spread(Year, Prov_Status) %>%
-  mutate(Scientific_name = tolower(Scientific_name)) %>%
   distinct()
-
 
 # merge to the previous dataset :
 
-all <- full_join(hist.data, new, by = "Scientific_name")
-
-
-## Need to fix 2012x and 2012y as not all equal
-
-
-
-## reformat to the long format
-
-# years of review : reptile and amphibians
-
-
-write.csv(all, file.path("data", "test.csv"), row.names = FALSE)
-
-
-
-# make a subset list of sci name and elcode to update missing elcodes
-all.sp.list <- ref %>%
-  select(c(Scientific_name, ELCODE)) %>%
-  filter(!is.na(ELCODE)) %>%
-  distinct()
-
-ref <- ref %>%
-  select(-ELCODE) %>%
-  left_join(all.sp.list, by = "Scientific_name") %>%
-  filter(!is.na(Taxonomic_Group))
-
-#write.csv(ref, file.path("data", "Ref.csv"), row.names = FALSE)
-
-# may also want to split butterfly from moths ie keep IILEPP and drop IILEPG / Y/ U
+all <- full_join(hist.data, new, by = "Scientific_Name") %>%
+  select(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE, everything()) %>%
+  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibians",
+                                ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
+                                       ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
+                                              ifelse(startsWith(ELCODE, "AM"), "Mammals",
+                                                     ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
+                                                            ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
+                                                                   ifelse(startsWith(ELCODE, "IIO"),"Odonata",
+                                                                          ifelse(startsWith(ELCODE, "IM"), "Molluscs",
+                                                                                 NA)))))))))
 
 
 
-# read in the latest changes document for inverts ------------------------------------
+head(all)
+
+# get last ranked value
+all <- all %>%
+  group_by(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE,
+           `2010`,`2011`,`2013`,`2017`,`2016`,`2018` ) %>%
+  mutate(last_rank = ifelse(!is.na(`2018`), `2018`,
+                            ifelse(!is.na(`2017`),`2017`,
+                                   ifelse(!is.na(`2016`), `2016`,
+                                          ifelse(!is.na(`2015`), `2015`,
+                                                 ifelse(!is.na(`2014`),`2014`,
+                                                        ifelse(!is.na(`2013`), `2013`,
+                                                               ifelse(!is.na(`2011`), `2011`, NA))))))))
+
+
+## ISSUE :
+# create a list where 2012 results do not match
+sp.to.check.1 <- all %>%
+  select(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE, `2012.y`,`2012.x`) %>%
+  filter(!`2012.y` ==`2012.x`)
+
+## 2) Some sci_names do not match the tabels particularly sub populations
+
+write.csv(all, file.path("data", "consolidated_output.csv"), row.names = FALSE)
+
+
+# Check the reason for date change and compare with consolidated data  ------------------------------------
 
 #excel_file <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019"),
@@ -157,7 +161,6 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
                                                                                    NA))))))))) %>%
   filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|")))
 
-
 sdata <- sdata %>%
     select("ELCODE","Scientific_Name","Common_Name","current_SRANK", "rank_review_date", "rank_change_date",
             "prev_SRank", "new_SRank" , "code", "reason", "comment") %>%
@@ -170,353 +173,44 @@ sdata <- sdata %>%
 # get list of current ranks
 
 ranks.2018 <- sdata %>%
-  select(c(Scientific_name, current_SRANK)) %>%
-  distinct()
+  select(c(ELCODE,Scientific_Name, current_SRANK)) %>%
+  distinct() %>%
+  filter(!is.na(current_SRANK))
+
 
 # check the 2018 ranks against the complete data table to highlight possible species to check
 
 sp.checks <- all %>%
-  select(Scientific_name, '2018') %>%
+  select(ELCODE, Scientific_Name, last_rank) %>%
   distinct() %>%
   full_join(ranks.2018) %>%
   mutate(sp.to.check = ifelse(current_SRANK == '2018', NA, TRUE)) %>%
   filter(is.na(sp.to.check))
 
-sp.checks <- sp.checks[rowSums(is.na(sp.checks[,2:4]))!=3,]
+sp.checks <- sp.checks[rowSums(is.na(sp.checks[,3:5]))!=3,]
 
-write.csv(sp.checks, file.path("data", "t2.csv"), row.names = FALSE)
 
+sp.checks <- full_join(sp.checks, sp.to.check.1)
+sp.to.check.1
 
 
+write.csv(sp.checks, file.path("data", "Species_to_check_manually.csv"), row.names = FALSE)
 
 
+## Manually verify data
 
+# open the  "consolidated_output.csv"
+# check species within the "species to check manually.csv
+# check 2012x and 2012y and where different
+# check the sci names with no ELCODE.
+# save as "verified_data.csv" with headings:
 
 
 
+# Format the years of the data for each group
 
 
 
-# add the recent changes to historic changes -----------------------------------
-ref.oi <- ref %>%
-  filter(ELCODE %in% sp.oi) %>%
-  filter(str_detect(ELCODE, 'IMBIV')) %>% # subset to smaller group
-  select(-c("Common_name", "Taxonomic_Group","Year", "Scientific_name")) %>%
-  distinct()
-
-xx <- ref %>%
-  filter(s)
-
-
-sp.rank <- sp.rank %>%
-  filter(str_detect(ELCODE, 'IMBIV')) %>%
-  distinct()
-
-
-sp.ref <- left_join(ref.oi, sp.rank, by = c("ELCODE","Prov Status Review Date",
-                                "Prov Status Change Date", "Prov_Status" = "new_SRank"))
-
-sp.ref <- sp.ref %>%
-  distinct() %>%
-  select(ELCODE, everything())
-
-
-
-write.csv(sp.rank, file.path("data", "t1.csv"), row.names = FALSE)
-
-write.csv(ref.oi, file.path("data", "t2.csv"), row.names = FALSE)
-
-
-
-
-
-sp.ref <- sp.ref %>%
-  mutate(status = ifelse(is.na(new_SRank), Prov_Status, new_SRank)) %>%
-  select(-new_SRank)
-
-
-# subset to molluscs
-xx <- xx %>%
-filter(str_detect(ELCODE, 'IMBIV'))
-
-# assess
-sp.yr.review <- xx %>%
-  group_by(ELCODE) %>%
-  summarise(no.record = n())
-
-# set up empty data frame to write into
-out <- data.frame(ELCODE = NA, status = NA, year = NA,
-                  code = NA, reason = NA, comment = NA)
-
-sp.list <- unique(sp.yr.review$ELCODE) # get list of species
-
-for(i in 1:length(sp.list)) {
-  i = 2
-  sp.data <- xx[xx$ELCODE == sp.list[i],]
-  sp.data <- sp.data %>%
-    select(ELCODE,`Prov Status Review Date`,
-           `Prov Status Change Date`,`Prov Status`,
-           prev_SRank, status, everything())
-
-  sp.out <- sp.data %>%
-    gather("foo", "year", 2:3) %>%
-    select(-foo) %>%
-    distinct()
-
- # mutate(status = ifelse(is.na(new_SRank),
-#           `Prov Status`, new_SRank))
-
-  if(length(unique(sp.out$year == 1))){
-    sp.out <- sp.out
-
-  } else {
-
-
-  }
-
-    sp.out <- sp.out %>%
-      distinct() %>%
-      select(ELCODE, status, year, code, reason, comment)
-
-  out <- bind_rows(out, sp.out)
-
-}
-
-
-
-
-# get sp with single review
-single.yr <- sp.yr.review[sp.yr.review$no.record == 1, 1]
-single.yr <- single.yr %>% pull()
-
-single <- xx %>%
-  filter(ELCODE %in% single.yr)
-
-single.initial <- single %>%
-  filter(code == 8 ) %>%
-#  mutate(year = 'Prov Status Review', # fix this..
-#         status = `Prov Status`) %>%
-  select(ELCODE, status, year,  code, reason, comment)
-
-out <- bind_rows(out, single.initial)
-
-write.csv(single, file.path("data", "testsingle.csv"), row.names = FALSE)
-
-
-write.csv(xx, file.path("data", "test12.csv"), row.names = FALSE)
-
-
-
-# 2004 - 2010 ranks - (ANDY's formatting)
-# 2011 - 2018 historic rank changes
-# random scan data ? possible
-
-# format to year species.
-
-
-
-# minium of three rank changes
-
-# SP , year , rank , reason # comments
-
-
-
-
-# remove moths/ lepidoptera (only butterflies )
-
-# list of the species
-
-
-
-
-# set up empty data frame to write into
-out <- data.frame(ELCODE = NA, `Prov Status` = NA, year = NA,
-             code = NA, reason = NA, comment = NA)
-
-# test data set with molluscs
-ssdata <- ssdata %>%
-  filter(Taxonomic_Group == "Molluscs")
-# filter(Taxonomic_Group == "Odonata")
-
-# split data by number of rank changes (ie: single or multiple)
-ssdata.sum <- ssdata %>%
-  group_by(Scientific_Name)%>%
-  summarise(nrows = n())
-
-ssdata <- ssdata %>%
-  left_join(ssdata.sum)
-
-# filter out species with a single rank change ---------
-single <- ssdata %>% filter(nrows == 1)
-
-t1 <- single %>%
-  filter(is.na(change_yr)) %>%
-  mutate(GP_comment = "initial review?") %>%
-  select(c(Taxonomic_Group, Scientific_Name,
-         Common_Name, current_SRANK,
-         review_yr, code, reason, comment, GP_comment)) %>%
-  rename(year = review_yr,
-         srank = current_SRANK)
-
-#write.csv(t1, file.path("data", "test1.csv"), row.names = FALSE)
-
-t2 <- single %>%
-  filter(!is.na(change_yr)) %>%
-  gather("n", "year", 12:13) %>%
-  select(c(Taxonomic_Group, Scientific_Name,
-         Common_Name, current_SRANK,
-         year, code, reason, comment)) %>%
-  distinct() %>%
-  rename(srank = current_SRANK) %>%
-  mutate(GP_comment = "multiple yr reviews")
-
-t.single <- bind_rows(t1, t2)
-out <- bind_rows(out,t.single)
-
- # write.csv(t.single, file.path("data", "test4.csv"), row.names = FALSE)
-
-# filter out species with a single rank change ---------
-multiple <- ssdata %>% filter(nrows > 1)
-
-#write.csv(multiple, file.path("data", "test2.csv"), row.names = FALSE)
-
-#sp.list <- as.list(unique(multiple$Scientific_Name)) # for future purr function
-sp.names <- unique(multiple$Scientific_Name)
-
-#sp.names <- sp.names[1] #test set
-
-# convert this to purrr function
-
-for(i in sp.names){
-  print(i)
- # i = sp.names[1]
-  m.1 <- multiple %>%
-    filter(Scientific_Name == i) %>%
-    filter(!is.na(prev_SRank)|!is.na(code))
-
-  m.1.metadata <- m.1 %>%
-    select(Taxonomic_Group, Scientific_Name, Common_Name)
-
-  if(length(m.1$Taxonomic_Group) == 1) {
-
-    time1 <- m.1 %>%
-      select(Scientific_Name, prev_SRank) %>%
-      rename(srank = prev_SRank) %>%
-      mutate(year = 9999)
-
-    time2 <- m.1 %>%
-      select(Scientific_Name, current_SRANK, code,
-             reason, comment, change_yr) %>%
-      rename(srank = current_SRANK,
-             year = change_yr)
-
-    out.time1 <- bind_rows(time2, time1)
-    m.1.out <- left_join(m.1.metadata, out.time1)
-
-    out <- bind_rows(out, m.1.out)
-
-  } else {
-    print(i)
-  }
-}
-
-
-write.csv(out, file.path("data", "test3.csv"), row.names = FALSE)
-
-
-#if(length(m.1$Taxonomic_Group) == 1) {
-#  t1 <- m.1 %>%
-#    gather("n", "year", 12:13)
-
-  }else {print "fix this still"}
-
-
-
-
-write.csv(m.1, file.path("data", "test6.csv"), row.names = FALSE)
-
-
-# filter the duplicates with NA but keep real NA's # not working
-#dup <- ssdata %>%
-# group_by(Taxonomic_Group, Scientific_Name, prev_SRank) %>%
-#  summarise(count = length(prev_SRank))
-#write.csv(dup, file.path("data", "testd.csv"))
-
-
-
-
-multi.ssdata <- ssdata %>%
-  mutate(yr_change = ifelse(current_SRANK == new_SRank,"YES","NO"))
-
-
-mdata1 <- multi.ssdata %>%
-  filter(yr_change == "YES") %>%
-  select(c(Taxonomic_Group, Scientific_Name,
-                   Common_Name,ELCODE, current_SRANK, BC_LIST,
-                   ch_entry_yr, code, reason, comment))
-
-mdata2 <- multi.ssdata %>%
-  filter(yr_change == "NO") %>%
-  select(c(Taxonomic_Group, Scientific_Name,
-           Common_Name,ELCODE, current_SRANK, BC_LIST,
-           ch_entry_yr, code, reason, comment))
-
-
-
-
-# Note: seems like there is duplicates in the data set (evrything with an ID is duplicated...??)
-
-
-
-
-# Attempt 2;
-
-
-odata <- sdata %>%
-  filter(Taxonomic_Group == "Odonata")
-
-# filter those with only a single review
-single.assess <- odata %>%
-  filter(is.na(rank_change_date)) %>%
-  mutate(year = year(rank_review_date),
-         comment = "initial assesment") %>%
-  select(c(Taxonomic_Group, Scientific_Name,
-           Common_Name, current_SRANK,
-           year, reason, comment))
-
-# filter and format data with two or more assessments
-twice.assess <- odata %>%
-  filter(!is.na(rank_change_date)) %>%      # remove sp with only a single review
-  distinct(Taxonomic_Group, Scientific_Name, Common_Name,
-           ELCODE, current_SRANK, rank_review_date, rank_change_date,
-           .keep_all= TRUE)   %>%
-  select(c(Taxonomic_Group, Scientific_Name,
-           Common_Name, current_SRANK,
-           rank_review_date,rank_change_date,
-           change_entry_date, prev_SRank, new_SRank,
-           code, reason))
-
-# convert data with twice assessment and no change
-twice.assess.no.change <- twice.assess %>%
-  filter(is.na(change_entry_date)) %>%
-  mutate(year1 = year(rank_review_date),
-         year2 = year(rank_change_date),
-         comment = "no change") %>%
-  gather("n", "year", 12:13) %>%
-  select(c(Taxonomic_Group, Scientific_Name,
-           Common_Name, current_SRANK,
-           year, reason, comment))
-
-# convert data twice assess with change
-# extract start ranking ~ unknown date
-twice.assess.with.change.start <- twice.assess %>%
-  filter(!is.na(change_entry_date)) %>%
-  select(c(Taxonomic_Group, Scientific_Name,
-           Common_Name, prev_SRank)) %>%
-  mutate(year = 9999,
-         current_SRANK = prev_SRank,
-         comment = "unknown start date") %>%
-  select(-prev_SRank)
 
 
 
