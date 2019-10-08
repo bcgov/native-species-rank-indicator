@@ -22,12 +22,3 @@ library(ranktrends) # currently stored on 00_functions_temp_only.R
 
 ref.0  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/bc-vertebrates-conservation-status-rank-history-1992-2012/resource/842bcf0f-acd2-4587-a6df-843ba33ec271https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
 
-# or read in a local copy temporarily
-
-
-vdata <- readRDS(file.path("data","indata.r"))
-
-
-
-
-
