@@ -203,6 +203,9 @@ write.csv(sp.to.check, file.path("data", "Species_to_check_manually.csv"), row.n
 # check species within the "species to check manually.csv
 # check 2012x and 2012y and where different
 # check the sci names with no ELCODE.
+# remove exotics
+# non - breeding (b)
+# check column with breeding birds (see large data )
 
 # save as "consolidated_data_verified.csv"
 
