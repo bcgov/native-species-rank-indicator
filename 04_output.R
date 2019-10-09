@@ -53,5 +53,6 @@ ggplot(csi.plot, aes(x = Year, y = mean, group = Taxonomic_Group)) + # same issu
   theme_soe() +
   x_scale
 
+# add the numbers to the plot of sp.
 
 
