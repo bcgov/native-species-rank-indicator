@@ -51,7 +51,7 @@ new.data <- file.path(("data"),
 #)
 
 new.0 <- read_csv(new.data ,
-                  col_names = c("Year", "Scientific_name", "foo", "Common_name",
+                  col_names = c("Year", "Scientific_name", "Scientific_Name_old", "Common_name",
                                 "foo1", "foo2", "Element_code", "foo3", "foo4",
                                 "Prov_Status", "Prov Status Review Date",
                                 "Prov Status Change Date",
@@ -62,7 +62,7 @@ new.0 <- read_csv(new.data ,
 new.0 <- new.0[-1,]
 
 new  <- new.0 %>%
-  select(c("Year", "Scientific_name", "Common_name","Element_code",
+  select(c("Year", "Scientific_name", "Scientific_Name_old", "Common_name","Element_code",
            "Prov_Status", "Prov Status Review Date",
            "Prov Status Change Date","BC List","Origin")) %>%
   mutate(ELCODE = Element_code,
@@ -79,19 +79,33 @@ new  <- new.0 %>%
                                                                                    NA))))))))) %>%
 
   select(-c("Element_code")) %>%
-  mutate(Scientific_Name = tolower(Scientific_name)) # %>%
- # filter(!Origin == "Exotic")   # remove exotics
-
+  mutate(Scientific_Name = tolower(Scientific_name))
+  #filter(!Origin == "Exotic")   # remove exotics
 
 # select groups of interest and reformat
 
 goi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles", "NA")
 
+name.change.key <- new %>%
+  filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|"))) %>%
+  select(Taxonomic_Group, Scientific_Name, Scientific_Name_old, Common_name, ELCODE) %>%
+  filter(!is.na(Scientific_Name_old)) %>%
+  mutate(Scientific_Name_old = tolower(Scientific_Name_old))
+
 new <- new %>%
   filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|"))) %>%
-  select(Scientific_Name, Year, Prov_Status, ELCODE, Origin, `BC List`) %>%
+  select(Scientific_Name, Year, Prov_Status, ELCODE) %>%
   spread(Year, Prov_Status) %>%
   distinct()
+
+#Use the name change key to update old names in historic data
+
+x <- hist.data %>%
+  name.change.key
+
+## Still to fix this part !
+
+
 
 # merge to the previous dataset :
 
@@ -120,7 +134,10 @@ all <- all %>%
                                           ifelse(!is.na(`2015`), `2015`,
                                                  ifelse(!is.na(`2014`),`2014`,
                                                         ifelse(!is.na(`2013`), `2013`,
-                                                               ifelse(!is.na(`2011`), `2011`, NA))))))))
+                                                               ifelse(!is.na(`2011`), `2011`, NA)))))))) %>%
+  select(c(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE, Origin, `BC List`, everything()) )
+
+
 
 
 ## ISSUE :
