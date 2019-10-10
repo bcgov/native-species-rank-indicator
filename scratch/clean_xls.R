@@ -34,6 +34,10 @@ hist.data <- hist.data %>%
 
 
 
+write.csv(hist.data, file.path("data", "hist.data.csv"), row.names = FALSE)
+
+
+
 # read in the latest data catalogue from CDC (2012 - 2018) ------------------------------------------------------------
 
 new.data <- file.path(("data"),
@@ -51,13 +55,16 @@ new.0 <- read_csv(new.data ,
                                 "foo1", "foo2", "Element_code", "foo3", "foo4",
                                 "Prov_Status", "Prov Status Review Date",
                                 "Prov Status Change Date",
-                                paste0("foo1", seq_len(48 - 12))))
+                                paste0("foo1", seq_len(2)), "BC List",
+                                paste0("foo2", seq_len(22)), "Origin",
+                                paste0("foo3", seq_len(10))))
+
 new.0 <- new.0[-1,]
 
 new  <- new.0 %>%
   select(c("Year", "Scientific_name", "Common_name","Element_code",
            "Prov_Status", "Prov Status Review Date",
-           "Prov Status Change Date")) %>%
+           "Prov Status Change Date","BC List","Origin")) %>%
   mutate(ELCODE = Element_code,
          `Prov Status Review Date` = year(`Prov Status Review Date`),
          `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
@@ -72,15 +79,17 @@ new  <- new.0 %>%
                                                                                    NA))))))))) %>%
 
   select(-c("Element_code")) %>%
-  mutate(Scientific_Name = tolower(Scientific_name))
+  mutate(Scientific_Name = tolower(Scientific_name)) # %>%
+ # filter(!Origin == "Exotic")   # remove exotics
+
 
 # select groups of interest and reformat
 
-group.oi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles")
+goi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles", "NA")
 
 new <- new %>%
   filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|"))) %>%
-  select(Scientific_Name, Year, Prov_Status, ELCODE) %>%
+  select(Scientific_Name, Year, Prov_Status, ELCODE, Origin, `BC List`) %>%
   spread(Year, Prov_Status) %>%
   distinct()
 
