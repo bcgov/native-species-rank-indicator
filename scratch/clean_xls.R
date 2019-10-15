@@ -30,12 +30,10 @@ hist.data  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4
 
 hist.data <- hist.data %>%
   mutate(Scientific_Name = tolower(Scientific_Name)) %>%
+  select(-Common_Name) %>%
   spread(Year, SRank)
 
-
-
-write.csv(hist.data, file.path("data", "hist.data.csv"), row.names = FALSE)
-
+#write.csv(hist.data, file.path("data", "hist.data.csv"), row.names = FALSE)
 
 
 # read in the latest data catalogue from CDC (2012 - 2018) ------------------------------------------------------------
@@ -86,11 +84,14 @@ new  <- new.0 %>%
 
 goi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles", "NA")
 
+# create a name.change.key
 name.change.key <- new %>%
   filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|"))) %>%
   select(Taxonomic_Group, Scientific_Name, Scientific_Name_old, Common_name, ELCODE) %>%
   filter(!is.na(Scientific_Name_old)) %>%
   mutate(Scientific_Name_old = tolower(Scientific_Name_old))
+
+name.change.sp <- c(name.change.key$Scientific_Name_old)
 
 new <- new %>%
   filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|"))) %>%
@@ -98,18 +99,33 @@ new <- new %>%
   spread(Year, Prov_Status) %>%
   distinct()
 
-#Use the name change key to update old names in historic data
+
+# update the scinames in historic data to match latest sci names
+
+hist.data <-  hist.data %>%
+  mutate(Update_name = ifelse(Scientific_Name %in% name.change.sp, 1, 0))
 
 x <- hist.data %>%
-  name.change.key
+  left_join(., name.change.key) %>%
+  distinct()
 
-## Still to fix this part !
+
+
+#write.csv(hist.data, file.path("data", "new.data.csv"), row.names = FALSE)
+#write.csv(name.change.key,  file.path("data", "name.key.csv"), row.names = FALSE)
+
+#Use the name change key to update old names in historic data
+
+#hist.data <-  full_join(hist.data, name.change.key)
+#hist.data <- distinct(hist.data)
+
+write.csv(x, file.path("data", "test.data.csv"), row.names = FALSE)
 
 
 
 # merge to the previous dataset :
 
-all <- full_join(hist.data, new, by = "Scientific_Name") %>%
+all <- left_join(new, hist.data,  by = "Scientific_Name") %>%
   select(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE, everything()) %>%
   mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibians",
                                 ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
@@ -124,6 +140,10 @@ all <- full_join(hist.data, new, by = "Scientific_Name") %>%
 
 
 head(all)
+
+#write.csv(all, file.path("data", "test.data1.csv"), row.names = FALSE)
+
+
 
 # get last ranked value
 all <- all %>%
