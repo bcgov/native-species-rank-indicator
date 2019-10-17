@@ -78,7 +78,6 @@ new  <- new.0 %>%
 
   select(-c("Element_code")) %>%
   mutate(Scientific_Name = tolower(Scientific_name))
-  #filter(!Origin == "Exotic")   # remove exotics
 
 # select groups of interest and reformat
 
@@ -89,44 +88,29 @@ name.change.key <- new %>%
   filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|"))) %>%
   select(Taxonomic_Group, Scientific_Name, Scientific_Name_old, Common_name, ELCODE) %>%
   filter(!is.na(Scientific_Name_old)) %>%
-  mutate(Scientific_Name_old = tolower(Scientific_Name_old))
+  mutate(Scientific_Name_old = tolower(Scientific_Name_old))%>%
+  distinct()
 
 name.change.sp <- c(name.change.key$Scientific_Name_old)
 
+# format new data
 new <- new %>%
   filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|"))) %>%
-  select(Scientific_Name, Year, Prov_Status, ELCODE) %>%
+  select(Scientific_Name, Common_name, Year, Prov_Status, ELCODE) %>%
   spread(Year, Prov_Status) %>%
   distinct()
 
-
-# update the scinames in historic data to match latest sci names
-
-hist.data <-  hist.data %>%
-  mutate(Update_name = ifelse(Scientific_Name %in% name.change.sp, 1, 0))
-
-x <- hist.data %>%
-  left_join(., name.change.key) %>%
-  distinct()
-
-
-
-#write.csv(hist.data, file.path("data", "new.data.csv"), row.names = FALSE)
 #write.csv(name.change.key,  file.path("data", "name.key.csv"), row.names = FALSE)
 
-#Use the name change key to update old names in historic data
 
-#hist.data <-  full_join(hist.data, name.change.key)
-#hist.data <- distinct(hist.data)
-
-write.csv(x, file.path("data", "test.data.csv"), row.names = FALSE)
+# Flag the historic sci names what dont match current name
+hist.data <-  hist.data %>%
+  mutate(CheckSciame = ifelse(Scientific_Name %in% name.change.sp, 1, 0))
 
 
-
-# merge to the previous dataset :
-
+# merge hist and new data sets:
 all <- left_join(new, hist.data,  by = "Scientific_Name") %>%
-  select(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE, everything()) %>%
+  select(Taxonomic_Group, Scientific_Name, ELCODE, everything()) %>%
   mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibians",
                                 ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
                                        ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
@@ -143,11 +127,9 @@ head(all)
 
 #write.csv(all, file.path("data", "test.data1.csv"), row.names = FALSE)
 
-
-
 # get last ranked value
 all <- all %>%
-  group_by(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE) %>%
+  group_by(Taxonomic_Group, Scientific_Name, ELCODE) %>%
   mutate(last_rank = ifelse(!is.na(`2018`), `2018`,
                             ifelse(!is.na(`2017`),`2017`,
                                    ifelse(!is.na(`2016`), `2016`,
@@ -155,18 +137,13 @@ all <- all %>%
                                                  ifelse(!is.na(`2014`),`2014`,
                                                         ifelse(!is.na(`2013`), `2013`,
                                                                ifelse(!is.na(`2011`), `2011`, NA)))))))) %>%
-  select(c(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE, Origin, `BC List`, everything()) )
+  select(c(Taxonomic_Group, Scientific_Name, Common_name, ELCODE, everything()) )
 
 
+# flag species which 2012 date does not match between data sets.
+all  <- all %>%
+  mutate(Update_2012_data = ifelse(`2012.y` ==`2012.x`, 0, 1))
 
-
-## ISSUE :
-# create a list where 2012 results do not match
-sp.to.check.1 <- all %>%
-  select(Taxonomic_Group, Scientific_Name, Common_Name, ELCODE, `2012.y`,`2012.x`) %>%
-  filter(!`2012.y` ==`2012.x`)
-
-## 2) Some sci_names do not match the tabels particularly sub populations
 
 write.csv(all, file.path("data", "consolidated_output.csv"), row.names = FALSE)
 
@@ -216,13 +193,11 @@ sdata <- sdata %>%
   distinct()
 
 # get list of current ranks
-
 ranks.changes <- sdata %>%
   select(c(ELCODE,Scientific_Name, current_SRANK)) %>%
   distinct() %>%
   mutate(Scientific_Name = tolower(Scientific_Name)) %>%
   filter(!is.na(current_SRANK))
-
 
 # check the 2018 ranks against the complete data table to highlight possible species to check
 
@@ -231,16 +206,9 @@ sp.checks <- all %>%
   distinct() %>%
   left_join(ranks.changes) %>%
   mutate(sp.to.check = ifelse(current_SRANK == last_rank, NA, TRUE)) %>%
-  filter(is.na(sp.to.check))
+  filter(!is.na(sp.to.check))
 
-sp.checks <- sp.checks[rowSums(is.na(sp.checks[,5:7]))!=3,]
-sp.checks %>%  drop_na(sp.to.check)
-
-# all matching!
-
-# just need to check the species with different 2010 rankings
-
-write.csv(sp.to.check, file.path("data", "Species_to_check_manually.csv"), row.names = FALSE)
+write.csv(sp.checks, file.path("data", "Species_to_check_manually.csv"), row.names = FALSE)
 
 
 ## Manually verify data
