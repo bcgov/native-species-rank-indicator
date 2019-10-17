@@ -144,6 +144,12 @@ all <- all %>%
 all  <- all %>%
   mutate(Update_2012_data = ifelse(`2012.y` ==`2012.x`, 0, 1))
 
+all <- all %>%
+  select(Taxonomic_Group, Scientific_Name, Common_name, ELCODE,"1992","1995", "1997",
+          "1998" , "2001","2002", "2003", "2005", "2006" ,"2007" , "2008" , "2010",
+         "2011", "2012.x" ,"2012.y", "2013" , "2014", "2015" , "2016", "2017" , "2018",
+         "CheckSciame" , "Update_2012_data" )
+
 
 write.csv(all, file.path("data", "consolidated_output.csv"), row.names = FALSE)
 
@@ -213,17 +219,20 @@ write.csv(sp.checks, file.path("data", "Species_to_check_manually.csv"), row.nam
 
 ## Manually verify data
 
-# open the  "consolidated_output.csv"
-# check species within the "species to check manually.csv
-# check 2012x and 2012y and where different
+# Currently half way through vetting the consolidated_output_edit.csv
+# I am using the Species_manually_adjusted.csv to keep track of manual changes
+# mostly name changes and duplicates in common name subspecies
+
+
+# still to do:
+# - finish editing the consolidates_output_edit.csv and track changes
+# - check 2012x and 2012y and where different
 # check the sci names with no ELCODE.
 # remove exotics
 # non - breeding (b)
 # check column with breeding birds (see large data )
 
 # save as "consolidated_data_verified.csv"
-
-
 
 
 
