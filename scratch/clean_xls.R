@@ -59,7 +59,7 @@ new.0 <- read_csv(new.data ,
 
 new.0 <- new.0[-1,]
 
-new  <- new.0 %>%
+new.1  <- new.0 %>%
   select(c("Year", "Scientific_name", "Scientific_Name_old", "Common_name","Element_code",
            "Prov_Status", "Prov Status Review Date",
            "Prov Status Change Date","BC List","Origin")) %>%
@@ -84,7 +84,7 @@ new  <- new.0 %>%
 goi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles", "NA")
 
 # create a name.change.key
-name.change.key <- new %>%
+name.change.key <- new.1 %>%
   filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|"))) %>%
   select(Taxonomic_Group, Scientific_Name, Scientific_Name_old, Common_name, ELCODE) %>%
   filter(!is.na(Scientific_Name_old)) %>%
@@ -94,7 +94,7 @@ name.change.key <- new %>%
 name.change.sp <- c(name.change.key$Scientific_Name_old)
 
 # format new data
-new <- new %>%
+new <- new.1 %>%
   filter(str_detect(Taxonomic_Group, paste(goi,collapse = "|"))) %>%
   select(Scientific_Name, Common_name, Year, Prov_Status, ELCODE) %>%
   spread(Year, Prov_Status) %>%
@@ -150,8 +150,8 @@ all <- all %>%
          "2011", "2012.x" ,"2012.y", "2013" , "2014", "2015" , "2016", "2017" , "2018",
          "CheckSciame" , "Update_2012_data" )
 
-
-write.csv(all, file.path("data", "consolidated_output.csv"), row.names = FALSE)
+#
+#write.csv(all, file.path("data", "consolidated_output.csv"), row.names = FALSE)
 
 
 # Check the reason for date change and compare with consolidated data  ------------------------------------
@@ -214,7 +214,7 @@ sp.checks <- all %>%
   mutate(sp.to.check = ifelse(current_SRANK == last_rank, NA, TRUE)) %>%
   filter(!is.na(sp.to.check))
 
-write.csv(sp.checks, file.path("data", "Species_to_check_manually.csv"), row.names = FALSE)
+#write.csv(sp.checks, file.path("data", "Species_to_check_manually.csv"), row.names = FALSE)
 
 
 ## Manually verify data
@@ -239,7 +239,59 @@ write.csv(sp.checks, file.path("data", "Species_to_check_manually.csv"), row.nam
 
 # Format the years of the data for each group
 
-vdata <- read_csv(file.path("data", "consolidated_output_verified.csv"))
+vdata <- read_csv(file.path("data", "consolidated_output_edit.csv"))
+
+sp.check <-  vdata %>%
+  group_by(ELCODE) %>%
+  summarise(count = n()) %>%
+  filter(count > 1)
+
+sp.check
+
+
+# add the bc origin and BC list to the data set
+
+
+new.1  <- new.0 %>%
+  select(c("Year", "Scientific_name", "Scientific_Name_old", "Common_name","Element_code",
+           "Prov_Status", "Prov Status Review Date",
+           "Prov Status Change Date","BC List","Origin")) %>%
+  mutate(ELCODE = Element_code,
+         `Prov Status Review Date` = year(`Prov Status Review Date`),
+         `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
+  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibians",
+                                  ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
+                                         ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
+                                                ifelse(startsWith(ELCODE, "AM"), "Mammals",
+                                                       ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
+                                                              ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
+                                                                     ifelse(startsWith(ELCODE, "IIO"),"Odonata",
+                                                                            ifelse(startsWith(ELCODE, "IM"), "Molluscs",
+                                                                                   NA))))))))) %>%
+
+  select(-c("Element_code")) %>%
+  mutate(Scientific_Name = tolower(Scientific_name)) %>%
+  filter(Year == 2018)
+
+origin <- new.1 %>%
+  select(Scientific_name, Origin, `BC List`) %>%
+  mutate(Scientific_Name = tolower(Scientific_name),
+         `BC List` = tolower(`BC List`)) %>%
+  filter(!is.na(Origin)) %>%
+  distinct()
+
+
+indata <- left_join(vdata, origin)
+
+#write.csv(indata, file.path("data", "indata.csv"), row.names = FALSE)
+
+saveRDS(indata, file.path("data","indata.R"))
+
+
+
+
+
+# set up years of assessment : still to do :
 
 vdata <- vdata %>%
   gather("Year", "SRank", 5:24) %>%
@@ -257,7 +309,5 @@ get.years <- vdata %>%
 # Amphibian       : 1992, 1998, 2002, 2008, 2012, 2018
 # breeding birds  : 1992, 1997, 2001, 2006, 2012,
 # Mammals
-
-saveRDS(vdata, file = file.path("data","indata.r"))
 
 
