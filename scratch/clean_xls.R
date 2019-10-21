@@ -248,9 +248,7 @@ sp.check <-  vdata %>%
 
 sp.check
 
-
 # add the bc origin and BC list to the data set
-
 
 new.1  <- new.0 %>%
   select(c("Year", "Scientific_name", "Scientific_Name_old", "Common_name","Element_code",
@@ -281,7 +279,14 @@ origin <- new.1 %>%
   distinct()
 
 
-indata <- left_join(vdata, origin)
+# set up years of assessment : still to do :
+indata <- left_join(vdata, origin) %>%
+  select(-c(CheckSciame, Update_2012_data, Scientific_name))
+
+indata <- indata %>%
+  gather("Year", "SRank", 5:25) %>%
+  drop_na("SRank")
+
 
 #write.csv(indata, file.path("data", "indata.csv"), row.names = FALSE)
 
@@ -289,21 +294,12 @@ saveRDS(indata, file.path("data","indata.R"))
 
 
 
-
-
-# set up years of assessment : still to do :
-
-vdata <- vdata %>%
-  gather("Year", "SRank", 5:24) %>%
-  drop_na("SRank")
-
+# still need to format years:
 
 get.years <- vdata %>%
   group_by(Taxonomic_Group, Year) %>%
   summarise(count = n())
 
-
-# still need to format years:
 
 # group the years per type
 # Amphibian       : 1992, 1998, 2002, 2008, 2012, 2018
