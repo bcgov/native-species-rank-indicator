@@ -27,7 +27,6 @@ csi.plot <- csi.plot %>%
   mutate(Year = as.numeric(Year))
 
 
-
 # add plotting parameters
 
 x_scale <- scale_x_continuous(limits = c(1990, max(csi.plot$Year) + 1),
@@ -44,7 +43,7 @@ normpal <- c("#e41a1c", "#377eb8","#4daf4a",  "#4daf4a")
 
 # plot facet plot
 
-ggplot(csi.plot, aes(x = Year, y = mean, group = Taxonomic_Group)) + # same issue here as line below
+p1 <- ggplot(csi.plot, aes(x = Year, y = mean, group = Taxonomic_Group)) + # same issue here as line below
   facet_wrap(~ Taxonomic_Group) +
   scale_colour_manual(values= normpal) +
   geom_point(aes(y = mean), size = 2) +
@@ -55,4 +54,25 @@ ggplot(csi.plot, aes(x = Year, y = mean, group = Taxonomic_Group)) + # same issu
 
 # add the numbers to the plot of sp.
 
+
+
+# Plot by BC Listing ------------------------------------------------------
+
+
+csi.bc.plot <- csi_bc %>%
+  group_by(`BC List`, Year) %>%
+  summarize(mean = mean(mean_wt), lci = mean(lci), uci = mean(uci))
+
+csi.bc.plot <- csi.bc.plot %>%
+  mutate(Year = as.numeric(Year))
+
+
+p2 <- ggplot(csi.bc.plot, aes(x = Year, y = mean, group = `BC List`)) + # same issue here as line below
+  facet_wrap(~ `BC List`) +
+  scale_colour_manual(values= normpal) +
+  geom_point(aes(y = mean), size = 2) +
+  geom_line(aes(y = mean)) +
+  geom_ribbon(aes(ymin = lci, ymax = uci), alpha = 0.2) +
+  theme_soe() +
+  x_scale
 
