@@ -43,31 +43,35 @@ cat("\\begin{center}
 
 
 
-```{r setup,  echo=FALSE, message=FALSE}
-library(ggplot2)
+**Within B.C. species are ranked by conservation status**. Ranks are assigned on a scale of S1 (high conservation concern) to S5, low concervation concern. Species are reassesssed approximately every four years. 
+
+**We assessed overal conservation status of groups of species from 1992 - 2018 by calculating a conservation status index.** The Conservation Status Index, shown in the graph below, reflects the overall conservation status of a group of species at a given time, and the trend in the Conservation Status Index over time is an indication of how the overall status of a group of species is changing. Confidence intervals for each group indicate how much variation is within each group. The larger the confidence intervals the wider the spread of ranks within the same group. 
 
 
+```{r taxonomy , echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, fig.cap = "Conservation Concern Ranking for Grizzly Bear Population units (GBPU)", results = 'asis', out.width='0.95\\linewidth', fig.align = 'center'}
 
-
-
-
+knitr::include_graphics("./csi_tax.png")
 
 ```
 
 
-# Within B.C. species are ranked on a scale of S1 (high conservation concern) to S5 low concervation concern)
-
-# We assessed conservation  Conservation Status Index assessed the overal conservation status of a group of species from 1992 - 2018 by calculating a conservation status index. 
-
-The Conservation Status Index, shown in the graph below, reflects the overall conservation status of a group of species at a given time, and the trend in the Conservation Status Index over time is an indication of how the overall status of a group of species is changing.
-
 The status of most vertebrate groups in British Columbia has declined since 1992—the year the B.C. Conservation Data Centre began assessing the status of species in British Columbia.
 Marine mammals are on the rebound! Several species which were heavily hunted in the 1800s and early 1900s have recovering populations.
+
 The overall decline in the status of birds was masked in the early 1990s by dramatic increases of several species that expanded their natural range into B.C.
-B.C. vertebrate groups have different levels of natural rarity. For example, most of B.C.'s reptiles and amphibians are much rarer than the majority of B.C.'s birds, and thus the Conservation Status Index for the group is lower overall.
+B.C. vertebrate groups have different levels of natural rarity. For example, most of B.C.'s reptiles and amphibians are much rarer than the majority of B.C.'s birds, and thus the Conservation Status Index for the group is lower overall. 
 
 
-Cum vivamus penatibus sed mus fringilla non sociosqu taciti ut. Sed, semper lacus justo ultricies penatibus praesent. Tortor vivamus fermentum libero, libero urna montes orci luctus ligula? Tellus et mauris sed a in lacinia imperdiet. Sed nec penatibus sed at mauris etiam. Interdum morbi arcu vitae lectus cubilia eros, imperdiet felis. Nisl, lacinia vel, nisl, rutrum ac, elementum felis. Dui ante eros ex mi, interdum velit accumsan sociosqu, tempus. Erat vulputate potenti nascetur. Malesuada, curabitur, leo himenaeos, molestie euismod sit. In vitae sollicitudin adipiscing commodo.
+
+
+```{r bc list , echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, fig.cap = "Conservation Concern Ranking for Grizzly Bear Population units (GBPU)", results = 'asis', out.width='0.95\\linewidth', fig.align = 'center'}
+
+knitr::include_graphics("./csi_bclist.png")
+
+```
+
+
+
 
 ## References and Other Useful Links
 
@@ -83,10 +87,10 @@ Cum vivamus penatibus sed mus fringilla non sociosqu taciti ut. Sed, semper lacu
 
 ----
 
-Published and Available On-Line at Environmental Reporting BC (Month Year):  
+Published and Available On-Line at Environmental Reporting BC (Month `format(Sys.Date(), "%Y")`):  
 [](http://www.env.gov.bc.ca/soe)
 
 Email correspondence to: envreportbc@gov.bc.ca
 
 Suggested Citation:  
-Environmental Reporting BC. Year. Indicator Title. State of Environment Reporting, Ministry of Environment and Climate Change Strategy, British Columbia, Canada.
+Environmental Reporting BC. `format(Sys.Date(), "%Y")`. Trends in Status of Native Species in B.C. (1992 - 2019). State of Environment Reporting, Ministry of Environment and Climate Change Strategy, British Columbia, Canada.
