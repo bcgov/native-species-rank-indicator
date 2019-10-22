@@ -12,21 +12,20 @@
 
 
 # or read in a local copy temporarily
-vdata <- readRDS(file.path("data","indata.r"))
+indata <- readRDS(file.path("data","indata.r"))
 
+# note this is native sp.only
 
-
-status_data_wts <- vdata %>%
+status_data_wts <- indata %>%
   mutate(parsed_rank_single = ranks_to_numeric(SRank, simplify = TRUE, round_fun = min),  # tried to extract 1st value ? not working
          wts = 5 - parsed_rank_single)
 
 status_complete <- status_data_wts %>%
   group_by(Taxonomic_Group) %>%
-  complete(nesting(Scientific_Name, Common_Name), Year) %>%
+  complete(nesting(Scientific_Name, Common_name), Year) %>%
   semi_join(
-    group_by(., Taxonomic_Group, Scientific_Name, Common_Name) %>%
+    group_by(., Taxonomic_Group, Scientific_Name, Common_name) %>%
       summarize())
-
 
 # remove those species which are extinct
 species_to_remove <- status_complete %>%
@@ -52,6 +51,43 @@ csi <- sampled_index(status_data_final, "Taxonomic_Group","wts","Year")
 csi <- csi %>% drop_na(Taxonomic_Group)
 
 
+saveRDS(csi, file.path("data","csi_taxonomic.R"))
 
-saveRDS(csi, file.path("data","csi.R"))
+
+# Group by BC Listing  ----------------------------------------------------
+
+status_complete <- status_data_wts %>%
+  group_by(`BC List`) %>%
+  complete(nesting(Scientific_Name, Common_name), Year) %>%
+  semi_join(
+    group_by(., `BC List`, Scientific_Name, Common_name) %>%
+      summarize())
+
+# remove those species which are extinct
+species_to_remove <- status_complete %>%
+  filter(Year == min(Year) & SRank == "SX") %>%
+  pull(Scientific_Name) %>%
+  unique()
+
+
+status_data_final <- status_complete  %>%
+  filter(!Scientific_Name %in% species_to_remove) %>%
+  ungroup() #%>%
+#  mutate(Taxonomic_Group = ifelse(
+#    Taxonomic_Group %in% c("Amphibians", "Reptiles and Turtles"),
+#    "Reptiles & Amphibians",
+#    Taxonomic_Group))
+
+# remove NAs
+status_data_final <- status_data_final %>%
+  filter(!is.na(wts))
+
+#run function
+csi_bc <- sampled_index(status_data_final, "`BC List`","wts","Year")
+csi_bc <- csi_bc %>% drop_na(`BC List`)
+
+
+saveRDS(csi_bc, file.path("data","csi_bclist.R"))
+
+
 
