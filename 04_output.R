@@ -76,3 +76,20 @@ p2 <- ggplot(csi.bc.plot, aes(x = Year, y = mean, group = `BC List`)) + # same i
   theme_soe() +
   x_scale
 
+
+# save plots
+
+multi_plot <- function(plotdata, filename) {
+  svg_px( paste0(filename,".svg"), width = 500, height = 400)
+  plot(plotdata)
+  dev.off()
+  png_retina(paste0(filename,".png"), width = 500, height = 400,
+             units = "px", type = "cairo-png", antialias = "default")
+  plot(plotdata)
+  dev.off()
+}
+
+
+multi_plot(p1, "./print_ver/csi_tax")
+
+multi_plot(p2, "./print_ver/csi_bclist")
