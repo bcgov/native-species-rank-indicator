@@ -42,7 +42,6 @@ cat("\\begin{center}
 
 
 
-
 **Within B.C. species are ranked by conservation status**. Ranks are assigned on a scale of S1 (high conservation concern) to S5, low concervation concern. Species are reassesssed approximately every four years. 
 
 **We assessed overal conservation status of groups of species from 1992 - 2018 by calculating a conservation status index.** The Conservation Status Index, shown in the graph below, reflects the overall conservation status of a group of species at a given time, and the trend in the Conservation Status Index over time is an indication of how the overall status of a group of species is changing. Confidence intervals for each group indicate how much variation is within each group. The larger the confidence intervals the wider the spread of ranks within the same group. 
@@ -75,15 +74,22 @@ knitr::include_graphics("./csi_bclist.png")
 
 ## References and Other Useful Links
 
-* Link 1
-* Link 2
+*[B.C. Conservation Data Cente](https://www2.gov.bc.ca/gov/content/environment/plants-animals-ecosystems/conservation-data-centre)
+
+*[B.C.Rank Assessment Methodology](https://www2.gov.bc.ca/gov/content/environment/plants-animals-ecosystems/conservation-data-centre/explore-cdc-data/status-ranks)
+
+*[B.C. Species and Ecosystem Explorer](https://www2.gov.bc.ca/gov/content/environment/plants-animals-ecosystems/conservation-data-centre/explore-cdc-data/species-and-ecosystems-explorer)
+
+*Butchart S.H., H. Resit Akçakaya, J. Chanson , J.E. Baillie, B. Collen, et al. 2007. Improvements to the Red List Index. PLoS ONE 2(1) [link](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0000140)
+
+*Quayle, J.F., L.R. Ramsay and D.F. Fraser. 2007. Trend in the Status of Breeding Bird Fauna in British Columbia, Canada, Based on the IUCN Red List Index Method. Conservation Biology 21(5): 1241-1247. [link](https://conbio.onlinelibrary.wiley.com/doi/abs/10.1111/j.1523-1739.2007.00753.x)
+
 
 ## Data
 
 \*By accessing these datasets, you agree to the licence associated with each file, as indicated in parentheses below.
 
-* Data 1
-* Data 2
+*[B.C. Vertebrate Conservation Status Rank history 1992- 2018](https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e)
 
 ----
 
@@ -93,4 +99,5 @@ Published and Available On-Line at Environmental Reporting BC (Month `format(Sys
 Email correspondence to: envreportbc@gov.bc.ca
 
 Suggested Citation:  
-Environmental Reporting BC. `format(Sys.Date(), "%Y")`. Trends in Status of Native Species in B.C. (1992 - 2019). State of Environment Reporting, Ministry of Environment and Climate Change Strategy, British Columbia, Canada.
+Environmental Reporting BC. `r format(Sys.Date(), "%Y")`. Trends in Status of Native Species in B.C. (1992 - 2019). State of Environment Reporting, Ministry of Environment and Climate Change Strategy, British Columbia, Canada.
+
