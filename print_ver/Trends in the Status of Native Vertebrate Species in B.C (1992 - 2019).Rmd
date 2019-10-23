@@ -60,7 +60,9 @@ Marine mammals are on the rebound! Several species which were heavily hunted in 
 The overall decline in the status of birds was masked in the early 1990s by dramatic increases of several species that expanded their natural range into B.C.
 B.C. vertebrate groups have different levels of natural rarity. For example, most of B.C.'s reptiles and amphibians are much rarer than the majority of B.C.'s birds, and thus the Conservation Status Index for the group is lower overall. The range in confidence levels for Reptiles and Amphibans also reflects wider range of staus index as compared to Breeding Birds, Mammals and Freshwater Fish. 
 
-Freshwater Fish showed a decline since 2014 largely due to .........
+Freshwater Fish showed a decline since 2014 largely due to increase in species 
+
+
 
 ```{r bc list , echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, fig.cap = "Conservation Status Index for four listed groups in British Columbia, 1992-2018", results = 'asis', out.width='0.95\\linewidth', fig.align = 'center'}
 
@@ -69,6 +71,8 @@ knitr::include_graphics("./csi_bclist.png")
 ```
 
 
+General notes 
+Mammals remained steady 
 
 
 
