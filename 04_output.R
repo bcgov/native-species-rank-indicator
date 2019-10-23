@@ -15,15 +15,12 @@
 
 library(ggplot2)
 library(dplyr)
-
 library(envreportutils)
 
 
 csi.plot <- csi %>%
   group_by(Taxonomic_Group, Year) %>%
-  summarize(mean = mean(mean_wt), lci = mean(lci), uci = mean(uci))
-
-csi.plot <- csi.plot %>%
+  summarize(mean = mean(mean_wt), lci = mean(lci), uci = mean(uci), N = N) %>%
   mutate(Year = as.numeric(Year))
 
 
@@ -47,10 +44,30 @@ p1 <- ggplot(csi.plot, aes(x = Year, y = mean, group = Taxonomic_Group)) + # sam
   facet_wrap(~ Taxonomic_Group) +
   scale_colour_manual(values= normpal) +
   geom_point(aes(y = mean), size = 2) +
+  geom_text(aes(label=N), vjust=2, col= " dark grey", size = 3) +
   geom_line(aes(y = mean)) +
   geom_ribbon(aes(ymin = lci, ymax = uci), alpha = 0.2) +
   theme_soe() +
   x_scale
+
+
+p <- plot_ly(p1)
+chart_link = plotly_POST(p, filename="facetwrap/basic")
+
+
+# or the plotly option
+p1 <- ggplot(csi.plot, aes(x = Year, y = mean)) + # same issue here as line below
+  facet_wrap(~ Taxonomic_Group) +
+  scale_colour_manual(values= normpal) +
+  geom_point(aes(y = mean), size = 2) +
+  #geom_text(aes(label=N), vjust=2, col= " dark grey", size = 3) +
+  geom_line(aes(y = mean)) +
+  geom_ribbon(aes(ymin = lci, ymax = uci), alpha = 0.2) +
+  theme_soe() +
+  x_scale
+
+
+p <- ggplotly(p1)
 
 # add the numbers to the plot of sp.
 
