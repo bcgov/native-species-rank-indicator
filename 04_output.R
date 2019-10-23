@@ -64,7 +64,8 @@ csi.bc.plot <- csi_bc %>%
   summarize(mean = mean(mean_wt), lci = mean(lci), uci = mean(uci))
 
 csi.bc.plot <- csi.bc.plot %>%
-  mutate(Year = as.numeric(Year))
+  mutate(Year = as.numeric(Year)) %>%
+  filter(!`BC List` %in% c("extinct", "unknown", "no status"))
 
 
 p2 <- ggplot(csi.bc.plot, aes(x = Year, y = mean, group = `BC List`)) + # same issue here as line below
@@ -93,3 +94,14 @@ multi_plot <- function(plotdata, filename) {
 multi_plot(p1, "./print_ver/csi_tax")
 
 multi_plot(p2, "./print_ver/csi_bclist")
+
+
+
+
+
+# Plotly graphics - test --------------------------------------------------
+
+library(plotly)
+
+p <- plot_ly(economics, x = ~date, y = ~unemploy / pop)
+
