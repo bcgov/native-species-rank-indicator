@@ -42,12 +42,12 @@ cat("\\begin{center}
 
 
 
-**Within B.C. species are ranked by conservation status**. Ranks are assigned on a scale of S1 (high conservation concern) to S5, low concervation concern. Species are reassesssed approximately every four years. 
+* **Within B.C. species are ranked by conservation status**. Ranks are assigned on a scale of S1 (high conservation concern) to S5, low concervation concern. Species are reassesssed approximately every four years. 
 
-**We assessed overal conservation status of groups of species from 1992 - 2018 by calculating a conservation status index.** The Conservation Status Index, shown in the graph below, reflects the overall conservation status of a group of species at a given time, and the trend in the Conservation Status Index over time is an indication of how the overall status of a group of species is changing. Confidence intervals for each group indicate how much variation is within each group. The larger the confidence intervals the wider the spread of ranks within the same group. 
+* **We assessed overal conservation status of groups of species from 1992 - 2018 by calculating a conservation status index.** The Conservation Status Index, shown in the graph below, reflects the overall conservation status of a group of species at a given time. We assessed chnages in Conservation Status Index over time to assess how the overall status of a group of species is changing. Confidence intervals for each group indicate how much variation is within each group. The larger the confidence intervals the wider the spread of ranks within the same group. 
 
 
-```{r taxonomy , echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, fig.cap = "Conservation Concern Ranking for Grizzly Bear Population units (GBPU)", results = 'asis', out.width='0.95\\linewidth', fig.align = 'center'}
+```{r taxonomy , echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, fig.cap = "Conservation Status Index for four vertebrate species groups in British Columbia, 1992-2018", results = 'asis', out.width='0.95\\linewidth', fig.align = 'center'}
 
 knitr::include_graphics("./csi_tax.png")
 
@@ -58,16 +58,19 @@ The status of most vertebrate groups in British Columbia has declined since 1992
 Marine mammals are on the rebound! Several species which were heavily hunted in the 1800s and early 1900s have recovering populations.
 
 The overall decline in the status of birds was masked in the early 1990s by dramatic increases of several species that expanded their natural range into B.C.
-B.C. vertebrate groups have different levels of natural rarity. For example, most of B.C.'s reptiles and amphibians are much rarer than the majority of B.C.'s birds, and thus the Conservation Status Index for the group is lower overall. 
+B.C. vertebrate groups have different levels of natural rarity. For example, most of B.C.'s reptiles and amphibians are much rarer than the majority of B.C.'s birds, and thus the Conservation Status Index for the group is lower overall. The range in confidence levels for Reptiles and Amphibans also reflects wider range of staus index as compared to Breeding Birds, Mammals and Freshwater Fish. 
 
+Freshwater Fish showed a decline since 2014 largely due to .........
 
-
-
-```{r bc list , echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, fig.cap = "Conservation Concern Ranking for Grizzly Bear Population units (GBPU)", results = 'asis', out.width='0.95\\linewidth', fig.align = 'center'}
+```{r bc list , echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, fig.cap = "Conservation Status Index for four listed groups in British Columbia, 1992-2018", results = 'asis', out.width='0.95\\linewidth', fig.align = 'center'}
 
 knitr::include_graphics("./csi_bclist.png")
 
 ```
+
+
+
+
 
 
 
