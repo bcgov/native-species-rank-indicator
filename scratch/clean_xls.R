@@ -219,24 +219,16 @@ sp.checks <- all %>%
 
 ## Manually verify data
 
-# Currently half way through vetting the consolidated_output_edit.csv
-# I am using the Species_manually_adjusted.csv to keep track of manual changes
-# mostly name changes and duplicates in common name subspecies
+# Currently manually vetted data is stored here: consolidated_output_edit.csv
+# I used Species_manually_adjusted.csv to keep track of manual changes mades to the Species_to_check_manually.csv
+# This was mostly name changes and duplicates in common name subspecies (spacing / upper/lower)
 
 
 # still to do:
-# - finish editing the consolidates_output_edit.csv and track changes
-# - check 2012x and 2012y and where different
-# check the sci names with no ELCODE.
-# remove exotics
-# non - breeding (b)
-# check column with breeding birds (see large data )
-
-# save as "consolidated_data_verified.csv"
+# - check 2012x and 2012y and where different - sent to Leah and Lea
 
 
-
-# Format the years of the data for each group
+## NOTE THIS FILE HAS BEEN MANUALLY EDITED _ PLEASE DONT WRITE OVER
 
 vdata <- read_csv(file.path("data", "consolidated_output_edit.csv"))
 
@@ -286,17 +278,11 @@ indata <- indata %>%
   drop_na("SRank")
 
 
-x <- indata %>%
-  group_by(Taxonomic_Group, Year) %>%
-  summarise(count = n())
-
-
 am <- c(1992,1998, 2002, 2010, 2016, 2018)
 bb <- c(1992, 1997, 2001, 2006, 2009, 2012, 2015, 2018)
 ff <- c(1992, 1998, 2001, 2005, 2010, 2012, 2018, 2019)
 ma <- c(1992, 1995, 2001, 2003, 2006, 2007, 2011, 2015, 20017, 2018)
 rt <- c(1992, 1998, 2002, 2008, 2012, 2018)
-
 
 
 xx <- indata %>%
@@ -306,12 +292,9 @@ xx <- indata %>%
                                      ifelse(Taxonomic_Group == "Mammals"  & Year %in% ma, T,
                                             ifelse(Taxonomic_Group == "Reptiles and Turtles"  & Year %in% rt, T,F))))))
 
-#length(xx$Taxonomic_Group)
 indata <- xx %>%
   filter(keep == TRUE) %>%
   select(-(keep))
-
-length(indata$Taxonomic_Group)
 
 
 #write.csv(indata, file.path("data", "indata.csv"), row.names = FALSE)
