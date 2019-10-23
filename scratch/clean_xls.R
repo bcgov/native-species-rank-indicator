@@ -236,7 +236,6 @@ sp.checks <- all %>%
 
 
 
-
 # Format the years of the data for each group
 
 vdata <- read_csv(file.path("data", "consolidated_output_edit.csv"))
@@ -294,7 +293,7 @@ x <- indata %>%
 
 am <- c(1992,1998, 2002, 2010, 2016, 2018)
 bb <- c(1992, 1997, 2001, 2006, 2009, 2012, 2015, 2018)
-ff <- c(1998, 2001, 2005, 2010, 2012, 2018, 2019)
+ff <- c(1992, 1998, 2001, 2005, 2010, 2012, 2018, 2019)
 ma <- c(1992, 1995, 2001, 2003, 2006, 2007, 2011, 2015, 20017, 2018)
 rt <- c(1992, 1998, 2002, 2008, 2012, 2018)
 
@@ -318,6 +317,5 @@ length(indata$Taxonomic_Group)
 #write.csv(indata, file.path("data", "indata.csv"), row.names = FALSE)
 
 saveRDS(indata, file.path("data","indata.R"))
-
 
 
