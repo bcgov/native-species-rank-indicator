@@ -278,7 +278,6 @@ origin <- new.1 %>%
   filter(!is.na(Origin)) %>%
   distinct()
 
-
 # set up years of assessment : still to do :
 indata <- left_join(vdata, origin) %>%
   select(-c(CheckSciame, Update_2012_data, Scientific_name))
@@ -288,22 +287,37 @@ indata <- indata %>%
   drop_na("SRank")
 
 
-#write.csv(indata, file.path("data", "indata.csv"), row.names = FALSE)
-
-saveRDS(indata, file.path("data","indata.R"))
-
-
-
-# still need to format years:
-
-get.years <- vdata %>%
+x <- indata %>%
   group_by(Taxonomic_Group, Year) %>%
   summarise(count = n())
 
 
-# group the years per type
-# Amphibian       : 1992, 1998, 2002, 2008, 2012, 2018
-# breeding birds  : 1992, 1997, 2001, 2006, 2012,
-# Mammals
+am <- c(1992,1998, 2002, 2010, 2016, 2018)
+bb <- c(1992, 1997, 2001, 2006, 2009, 2012, 2015, 2018)
+ff <- c(1998, 2001, 2005, 2010, 2012, 2018, 2019)
+ma <- c(1992, 1995, 2001, 2003, 2006, 2007, 2011, 2015, 20017, 2018)
+rt <- c(1992, 1998, 2002, 2008, 2012, 2018)
+
+
+
+xx <- indata %>%
+  mutate(keep = ifelse(Taxonomic_Group == 'Amphibians' & Year %in% am, T,
+                       ifelse(Taxonomic_Group == "Breeding Birds" & Year %in% bb, T,
+                              ifelse(Taxonomic_Group == "Freshwater Fish"  & Year %in% ff, T,
+                                     ifelse(Taxonomic_Group == "Mammals"  & Year %in% ma, T,
+                                            ifelse(Taxonomic_Group == "Reptiles and Turtles"  & Year %in% rt, T,F))))))
+
+#length(xx$Taxonomic_Group)
+indata <- xx %>%
+  filter(keep == TRUE) %>%
+  select(-(keep))
+
+length(indata$Taxonomic_Group)
+
+
+#write.csv(indata, file.path("data", "indata.csv"), row.names = FALSE)
+
+saveRDS(indata, file.path("data","indata.R"))
+
 
 
