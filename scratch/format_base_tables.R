@@ -31,29 +31,34 @@ library(readr)
 #ref.0  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/d3651b8c-f560-48f7-a34e-26b0afc77d84/resource/39aa3eb8-da10-49c5-8230-a3b5fd0006a9/download/bcsee_plants_animals.csv")
 # or
 
-#hist.data <- file.path(
+# hist.data <- file.path(
 #  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
 #  "BCSEE_Plants_Animals_final.csv"
-#)
+# )
 
 hist.data <- file.path(("data"),
   "BCSEE_Plants_Animals_final.csv"
 )
 
-ref.0 <- read_csv(hist.data ,
-                  col_names = c("Year", "Scientific_name", "foo", "Common_name",
-                                "foo1", "foo2", "Element_code", "foo3", "foo4",
-                                "Prov_Status", "Prov Status Review Date",
-                                "Prov Status Change Date",
-                                paste0("foo1", seq_len(48 - 12))))
-ref.0 <- ref.0[-1,]
-
+ref.0 <- read_csv(hist.data,
+                  col_types = cols_only(
+                    Year = col_integer(),
+                    `Scientific Name` = col_character(),
+                    `English Name` = col_character(),
+                    `Element Code` = col_character(),
+                    `Prov Status` = col_character(),
+                    `Prov Status Review Date` = col_character(),
+                    `Prov Status Change Date` = col_character()
+                  )
+) %>%
+  rename_all(function(x) tolower(gsub("\\s+", "_", x))) %>%
+  rename(ELCODE = element_code,
+         common_name = english_name)
 
 # create a key with all historic ELcode, names, scinema , Taxanomic
 key <- ref.0 %>%
-  select(c("Scientific_name", "Element_code")) %>%
-  mutate(ELCODE = Element_code) %>%
-  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
+  select(scientific_name, ELCODE) %>%
+  mutate(taxonomic_group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
                                 ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
                                        ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
                                               ifelse(startsWith(ELCODE, "AM"), "Mammals",
@@ -62,20 +67,18 @@ key <- ref.0 %>%
                                                                    ifelse(startsWith(ELCODE, "IIO"),"Odonata",
                                                                           ifelse(startsWith(ELCODE, "IM"), "Molluscs",
                                                                                  NA))))))))) %>%
-  filter(!is.na(Taxonomic_Group)) %>%
-  select(Scientific_name, Taxonomic_Group) %>%
+  filter(!is.na(taxonomic_group)) %>%
+  select(scientific_name, taxonomic_group) %>%
   distinct()
 
 
 ref <- ref.0 %>%
-  select(c("Year", "Scientific_name", "Common_name","Element_code",
-           "Prov_Status", "Prov Status Review Date",
-           "Prov Status Change Date")) %>%
-  mutate(ELCODE = Element_code) %>%
-    #     `Prov Status Review Date` = year(`Prov Status Review Date`),
-    #     `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
-  left_join(key) %>%
-  select(-Element_code)
+  select(year, scientific_name, common_name, ELCODE,
+           prov_status, prov_status_review_date,
+           prov_status_change_date) %>%
+    #     prov_status_review_date = year(prov_status_review_date),
+    #     prov_status_change_date = year(prov_status_change_date)) %>%
+  left_join(key)
 
 # Run through each group and add pre2004 to historic data sets.
 
@@ -90,23 +93,23 @@ col.names.fn <- function(x) {
 
 group.oi <- c("Odonata", "Lepidoptera", "Molluscs")
 
-for(i in group.oi) {
-  i = "Molluscs"
+for (i in group.oi) {
+  # i = "Molluscs"
   gref <- ref %>%
-    filter(Taxonomic_Group ==  i) %>%
-    select(ELCODE, Scientific_name, Year, Prov_Status) %>%
-    spread(Year, Prov_Status) %>%
-    mutate(Scientific_name = tolower(Scientific_name)) %>%
+    filter(taxonomic_group ==  i) %>%
+    select(ELCODE, scientific_name, year, prov_status) %>%
+    spread(year, prov_status) %>%
+    mutate(scientific_name = tolower(scientific_name)) %>%
     distinct()
 
   # read in the per 2004 data
   pre2004 <- read_excel(file.path("data",
                                   paste(i ,"_pre2004.xlsx",sep = "")))
   pre2004 <- pre2004 %>%
-    mutate(Scientific_name = tolower(Scientific_name))
+    mutate(scientific_name = tolower(Scientific_name))
 
   data_all <- full_join(gref, pre2004) %>%
-    group_by(Scientific_name) %>%
+    group_by(scientific_name) %>%
     summarise_all(max, na.rm = TRUE)
 
   # get the years of interest
@@ -125,7 +128,7 @@ for(i in group.oi) {
   data_all <- data_all %>%
     filter(str_detect(ELCODE, paste(groups.to.keep , collapse = "|"))) %>%
     select(sort(names(data_all))) %>%
-    select(ELCODE, Scientific_name, everything())
+    select(ELCODE, scientific_name, everything())
 
   write.csv(data_all, file.path("data", "Inverts", "Contractor_datasets", i, paste0(i, "_deliverable.csv",sep = "")), row.names = FALSE)
 
@@ -150,8 +153,9 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
                                   "rank_review_date", "rank_change_date",
                                   "change_entry_date", "prev_SRank",
                                   "new_SRank", "code", "reason", "comment"))  %>%
-  select(Scientific_Name, Common_Name, everything()) %>%
-  filter(! BC_LIST == "Exotic") %>%
+  rename_at(setdiff(names(.), c("BC_LIST", "ELCODE")), tolower) %>%
+  select(scientific_name, common_name, everything()) %>%
+  filter(!BC_LIST == "Exotic") %>%
   filter(str_detect(ELCODE, 'I')) %>%
   filter(!str_detect(ELCODE, 'IMGAS'))
 
