@@ -48,24 +48,34 @@ ref.0 <- read_csv(hist.data ,
                                 paste0("foo1", seq_len(48 - 12))))
 ref.0 <- ref.0[-1,]
 
+
+# create a key with all historic ELcode, names, scinema , Taxanomic
+key <- ref.0 %>%
+  select(c("Scientific_name", "Element_code")) %>%
+  mutate(ELCODE = Element_code) %>%
+  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
+                                ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
+                                       ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
+                                              ifelse(startsWith(ELCODE, "AM"), "Mammals",
+                                                     ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
+                                                            ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
+                                                                   ifelse(startsWith(ELCODE, "IIO"),"Odonata",
+                                                                          ifelse(startsWith(ELCODE, "IM"), "Molluscs",
+                                                                                 NA))))))))) %>%
+  filter(!is.na(Taxonomic_Group)) %>%
+  select(Scientific_name, Taxonomic_Group) %>%
+  distinct()
+
+
 ref <- ref.0 %>%
   select(c("Year", "Scientific_name", "Common_name","Element_code",
            "Prov_Status", "Prov Status Review Date",
            "Prov Status Change Date")) %>%
-  mutate(ELCODE = Element_code,
-         `Prov Status Review Date` = year(`Prov Status Review Date`),
-         `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
-  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibias",
-                                  ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
-                                         ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
-                                                ifelse(startsWith(ELCODE, "AM"), "Mammals",
-                                                       ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
-                                                              ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
-                                                                     ifelse(startsWith(ELCODE, "IIO"),"Odonata",
-                                                                            ifelse(startsWith(ELCODE, "IM"), "Molluscs",
-                                                                                   NA))))))))) %>%
-
-  select(-c("Element_code"))
+  mutate(ELCODE = Element_code) %>%
+    #     `Prov Status Review Date` = year(`Prov Status Review Date`),
+    #     `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
+  left_join(key) %>%
+  select(-Element_code)
 
 # Run through each group and add pre2004 to historic data sets.
 
@@ -81,7 +91,7 @@ col.names.fn <- function(x) {
 group.oi <- c("Odonata", "Lepidoptera", "Molluscs")
 
 for(i in group.oi) {
-
+  i = "Molluscs"
   gref <- ref %>%
     filter(Taxonomic_Group ==  i) %>%
     select(ELCODE, Scientific_name, Year, Prov_Status) %>%
@@ -90,12 +100,14 @@ for(i in group.oi) {
     distinct()
 
   # read in the per 2004 data
-  pre2004 <- read_excel(file.path("data", "Compiled_pre2004",
+  pre2004 <- read_excel(file.path("data",
                                   paste(i ,"_pre2004.xlsx",sep = "")))
   pre2004 <- pre2004 %>%
     mutate(Scientific_name = tolower(Scientific_name))
 
-  data_all <- full_join(gref, pre2004)
+  data_all <- full_join(gref, pre2004) %>%
+    group_by(Scientific_name) %>%
+    summarise_all(max, na.rm = TRUE)
 
   # get the years of interest
   oyears1 <- names(data_all)[str_detect(names(data_all), c("1"))]
@@ -115,7 +127,7 @@ for(i in group.oi) {
     select(sort(names(data_all))) %>%
     select(ELCODE, Scientific_name, everything())
 
-  write.csv(data_all, file.path("data",paste0(i, "_deliverable.csv",sep = "")), row.names = FALSE)
+  write.csv(data_all, file.path("data", "Inverts", "Contractor_datasets", i, paste0(i, "_deliverable.csv",sep = "")), row.names = FALSE)
 
 }
 
@@ -147,18 +159,18 @@ sdata <- read_excel(excel_file, sheet = "Query Output",
 leps <- sdata %>%
   filter(str_detect(ELCODE, 'ILEP'))
 
-write.csv(leps, file.path("data", "Contractor_datasets", "Lepidoptera",
+write.csv(leps, file.path("data", "Inverts", "Contractor_datasets","Lepidoptera",
                           "Lepidoptera_Rank_change_reason.csv"))
 #generate odo output
 odo <- sdata %>%
   filter(str_detect(ELCODE, 'IIODO'))
 
-write.csv(odo, file.path("data", "Contractor_datasets", "Odonata",
+write.csv(odo, file.path("data", "Inverts", "Contractor_datasets", "Odonata",
                           "Odonata_rank_change_reason.csv"))
 
 #generate odo output
 mol <- sdata %>%
   filter(str_detect(ELCODE, 'IMBIV'))
 
-write.csv(mol, file.path("data", "Contractor_datasets", "Molluscs",
+write.csv(mol, file.path("data", "Inverts", "Contractor_datasets","Molluscs",
                          "Molluscs_rank_change_reason.csv"))
