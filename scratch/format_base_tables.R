@@ -196,10 +196,7 @@ for (i in seq_along(group.oi)) {
 
   data_all[, new.cols.to.add] <- ""
 
-  groups.to.keep <- c("IIODO", "ILEP", "IMBIV")
-
   data_all <- data_all %>%
-    filter(str_detect(ELCODE, paste(groups.to.keep , collapse = "|"))) %>%
     select(sort(names(data_all))) %>%
     select(ELCODE, scientific_name, everything())
 
