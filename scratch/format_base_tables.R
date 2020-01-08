@@ -25,6 +25,8 @@ library(lubridate)
 library(gtools)
 library(readr)
 
+source("R/lookup_elcode.R")
+
 
 # Create tables to populate
 
@@ -71,6 +73,13 @@ key <- ref.0 %>%
               select(scientific_name, ELCODE) %>%
               filter(!is.na(ELCODE)) %>%
               distinct())
+
+sum(is.na(key$ELCODE))
+
+key$ELCODE[is.na(key$ELCODE)] <- lookup_elcodes(key$scientific_name[is.na(key$ELCODE)])
+
+sum(is.na(key$ELCODE))
+
 key <- key %>% mutate(taxonomic_group = case_when(
     # startsWith(ELCODE, "AA")  ~ "Amphibians",
     # startsWith(ELCODE, "AB")  ~ "Breeding Birds",
