@@ -13,7 +13,6 @@
 #remotes::install_github("bcgov/bcgovr")
 #remotes::install_github("bcgov/envreportutils")
 
-library(bcgovr)
 library(readxl)
 library(cellranger) # letter_to_num
 library(dplyr)
