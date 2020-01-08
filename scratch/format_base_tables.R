@@ -173,6 +173,16 @@ for (i in seq_along(group.oi)) {
       TRUE ~ scientific_name
     )) %>%
     select(-scientific_name.old)
+
+
+  data_all <- full_join(gref, pre2004, by = "ELCODE", suffix = c("", ".1")) %>%
+    mutate(
+      scientific_name = ifelse(is.na(scientific_name),
+                                 scientific_name.1,
+                                 scientific_name)
+    ) %>%
+    select(-scientific_name.1) %>%
+    group_by(scientific_name, ELCODE) %>%
     summarise_all(max, na.rm = TRUE)
 
   # get the years of interest
