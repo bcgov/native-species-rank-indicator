@@ -115,7 +115,14 @@ ref <- ref.0 %>%
            prov_status, prov_status_review_date,
            prov_status_change_date) %>%
   mutate(scientific_name = tolower(scientific_name)) %>%
-  right_join(key, by = "scientific_name")
+  left_join(key, by = "scientific_name") %>% # get ELCODES where there weren't
+  # replace scientific name with latest
+  left_join(latest_key, by = "ELCODE",suffix = c(".old", "")) %>%
+  mutate(scientific_name = case_when(
+    is.na(scientific_name) ~ scientific_name.old,
+    TRUE ~ scientific_name
+  )) %>%
+  select(-scientific_name.old)
 
 # Run through each group and add pre2004 to historic data sets.
 
