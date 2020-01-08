@@ -156,6 +156,23 @@ for (i in seq_along(group.oi)) {
                         na = c("", "n/a")) %>%
     mutate(scientific_name = tolower(Scientific_name)) %>%
     select(-Scientific_name)
+
+  if (!"ELCODE" %in% names(pre2004)){
+    pre2004 <- pre2004 %>%
+      left_join(select(key, scientific_name, ELCODE), by = "scientific_name")
+  }
+
+  pre2004$ELCODE[is.na(pre2004$ELCODE)] <- lookup_elcodes(pre2004$scientific_name[is.na(pre2004$ELCODE)])
+
+  pre2004 <- pre2004 %>%
+    filter(is.na(ELCODE) | grepl(elcode_abbrev, ELCODE)) %>%
+    # replace scientific name with latest
+    left_join(latest_key, by = "ELCODE",suffix = c(".old", "")) %>%
+    mutate(scientific_name = case_when(
+      is.na(scientific_name) ~ scientific_name.old,
+      TRUE ~ scientific_name
+    )) %>%
+    select(-scientific_name.old)
     summarise_all(max, na.rm = TRUE)
 
   # get the years of interest
