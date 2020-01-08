@@ -64,6 +64,7 @@ ref.0 <- read_csv(hist.data,
          !is.na(scientific_name)) %>%
   mutate(scientific_name = tolower(trimws(scientific_name, "both")))
 
+if (!file.exists("data/tax_key.csv")) {
 
 # create a key with all historic ELcode, names, scinema , Taxanomic
 key <- ref.0 %>%
@@ -95,6 +96,10 @@ key <- key %>% mutate(taxonomic_group = case_when(
   distinct() %>%
   mutate(scientific_name = tolower(scientific_name))
 
+  write_csv(key, "data/tax_key.csv")
+} else {
+  key <- read_csv("data/tax_key.csv")
+}
 
 ref <- ref.0 %>%
   select(year, scientific_name, common_name,
