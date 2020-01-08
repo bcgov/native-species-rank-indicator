@@ -48,12 +48,20 @@ ref.0 <- read_csv(hist.data,
                     `Element Code` = col_character(),
                     `Prov Status` = col_character(),
                     `Prov Status Review Date` = col_character(),
-                    `Prov Status Change Date` = col_character()
+                    `Prov Status Change Date` = col_character(),
+                    `Name Category` = col_character()
                   )
 ) %>%
   rename_all(function(x) tolower(gsub("\\s+", "_", x))) %>%
+  filter(!name_category %in% c("Vascular Plant", "Non-Vascular Plant",
+                              "Nonvascular Plant", "Fungus",
+                              "International Vegetation Classification")) %>%
   rename(ELCODE = element_code,
-         common_name = english_name)
+         common_name = english_name) %>%
+  filter(!grepl("^(Search|Sort|Open|Animals)", scientific_name),
+         !is.na(scientific_name)) %>%
+  mutate(scientific_name = tolower(trimws(scientific_name, "both")))
+
 
 # create a key with all historic ELcode, names, scinema , Taxanomic
 key <- ref.0 %>%
