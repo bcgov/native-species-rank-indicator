@@ -94,19 +94,22 @@ col.names.fn <- function(x) {
 
 group.oi <- c("Odonata", "Lepidoptera", "Molluscs")
 
-for (i in group.oi) {
-  # i = "Molluscs"
+output_dirs <- file.path("data", "Inverts", "Contractor_datasets", group.oi)
+lapply(output_dirs, dir.create, showWarnings = FALSE, recursive = TRUE)
+
+for (i in seq_along(group.oi)) {
+  i <- 3
+  group <- group.oi[i]
   gref <- ref %>%
-    filter(taxonomic_group ==  i) %>%
-    select(ELCODE, scientific_name, year, prov_status) %>%
+    filter(taxonomic_group ==  group) %>%
+    select(scientific_name, year, prov_status) %>%
     spread(year, prov_status) %>%
     mutate(scientific_name = tolower(scientific_name)) %>%
     distinct()
 
   # read in the per 2004 data
   pre2004 <- read_excel(file.path("data",
-                                  paste(i ,"_pre2004.xlsx",sep = "")))
-  pre2004 <- pre2004 %>%
+                                  paste(group ,"_pre2004.xlsx",sep = ""))) %>%
     mutate(scientific_name = tolower(Scientific_name))
 
   data_all <- full_join(gref, pre2004) %>%
@@ -131,7 +134,7 @@ for (i in group.oi) {
     select(sort(names(data_all))) %>%
     select(ELCODE, scientific_name, everything())
 
-  write.csv(data_all, file.path("data", "Inverts", "Contractor_datasets", i, paste0(i, "_deliverable.csv",sep = "")), row.names = FALSE)
+  write_csv(data_all, file.path(output_dirs[i], paste0(group, "_deliverable.csv",sep = "")))
 
 }
 
