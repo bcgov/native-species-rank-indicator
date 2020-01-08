@@ -152,11 +152,10 @@ for (i in seq_along(group.oi)) {
 
   # read in the per 2004 data
   pre2004 <- read_excel(file.path("data",
-                                  paste(group ,"_pre2004.xlsx",sep = ""))) %>%
-    mutate(scientific_name = tolower(Scientific_name))
-
-  data_all <- full_join(gref, pre2004) %>%
-    group_by(scientific_name) %>%
+                                  paste(group ,"_pre2004.xlsx",sep = "")),
+                        na = c("", "n/a")) %>%
+    mutate(scientific_name = tolower(Scientific_name)) %>%
+    select(-Scientific_name)
     summarise_all(max, na.rm = TRUE)
 
   # get the years of interest
