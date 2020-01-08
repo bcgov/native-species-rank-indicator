@@ -64,24 +64,24 @@ ref.0 <- read_csv(hist.data,
          !is.na(scientific_name)) %>%
   mutate(scientific_name = tolower(trimws(scientific_name, "both")))
 
-if (!file.exists("data/tax_key.csv")) {
+if (!file.exists("data/tax_key_full.csv")) {
 
   # create a key with all historic ELcode, names, scinema , Taxanomic
-  key <- ref.0 %>%
+  full_key <- ref.0 %>%
     select(scientific_name) %>%
     distinct() %>%
     left_join(ref.0 %>%
-                select(scientific_name, ELCODE) %>%
+                select(scientific_name, ELCODE, year) %>%
                 filter(!is.na(ELCODE)) %>%
                 distinct())
 
-  sum(is.na(key$ELCODE))
+  sum(is.na(full_key$ELCODE))
 
-  key$ELCODE[is.na(key$ELCODE)] <- lookup_elcodes(key$scientific_name[is.na(key$ELCODE)])
+  full_key$ELCODE[is.na(full_key$ELCODE)] <- lookup_elcodes(full_key$scientific_name[is.na(full_key$ELCODE)])
 
-  sum(is.na(key$ELCODE))
+  sum(is.na(full_key$ELCODE))
 
-  key <- key %>% mutate(taxonomic_group = case_when(
+  key <- full_key %>% mutate(taxonomic_group = case_when(
     # startsWith(ELCODE, "AA")  ~ "Amphibians",
     # startsWith(ELCODE, "AB")  ~ "Breeding Birds",
     # startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
@@ -96,9 +96,16 @@ if (!file.exists("data/tax_key.csv")) {
     distinct() %>%
     mutate(scientific_name = tolower(scientific_name))
 
-  write_csv(key, "data/tax_key.csv")
+  # Create a key with just one row for each ELCODE to use for authoritative names
+  latest_key <- group_by(full_key, ELCODE) %>%
+    filter(year == max(year)) %>%
+    select(-year)
+
+  write_csv(key, "data/tax_key_full.csv")
+  write_csv(latest_key, "data/tax_key_latest.csv")
 } else {
-  key <- read_csv("data/tax_key.csv")
+  key <- read_csv("data/tax_key_full.csv")
+  latest_key <- read_csv("data/tax_key_latest.csv")
 }
 
 ref <- ref.0 %>%
