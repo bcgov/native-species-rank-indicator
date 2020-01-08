@@ -66,35 +66,35 @@ ref.0 <- read_csv(hist.data,
 
 if (!file.exists("data/tax_key.csv")) {
 
-# create a key with all historic ELcode, names, scinema , Taxanomic
-key <- ref.0 %>%
-  select(scientific_name) %>%
-  distinct() %>%
-  left_join(ref.0 %>%
-              select(scientific_name, ELCODE) %>%
-              filter(!is.na(ELCODE)) %>%
-              distinct())
+  # create a key with all historic ELcode, names, scinema , Taxanomic
+  key <- ref.0 %>%
+    select(scientific_name) %>%
+    distinct() %>%
+    left_join(ref.0 %>%
+                select(scientific_name, ELCODE) %>%
+                filter(!is.na(ELCODE)) %>%
+                distinct())
 
-sum(is.na(key$ELCODE))
+  sum(is.na(key$ELCODE))
 
-key$ELCODE[is.na(key$ELCODE)] <- lookup_elcodes(key$scientific_name[is.na(key$ELCODE)])
+  key$ELCODE[is.na(key$ELCODE)] <- lookup_elcodes(key$scientific_name[is.na(key$ELCODE)])
 
-sum(is.na(key$ELCODE))
+  sum(is.na(key$ELCODE))
 
-key <- key %>% mutate(taxonomic_group = case_when(
+  key <- key %>% mutate(taxonomic_group = case_when(
     # startsWith(ELCODE, "AA")  ~ "Amphibians",
     # startsWith(ELCODE, "AB")  ~ "Breeding Birds",
     # startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
     # startsWith(ELCODE, "AM")  ~ "Mammals",
     # startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
-  startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
-  startsWith(ELCODE, "IIODO") ~ "Odonata",
-  startsWith(ELCODE, "IMBIV") ~ "Molluscs",
-  TRUE ~ NA_character_)) %>%
-  filter(!is.na(taxonomic_group)) %>%
-  select(scientific_name, ELCODE, taxonomic_group) %>%
-  distinct() %>%
-  mutate(scientific_name = tolower(scientific_name))
+    startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
+    startsWith(ELCODE, "IIODO") ~ "Odonata",
+    startsWith(ELCODE, "IMBIV") ~ "Molluscs",
+    TRUE ~ NA_character_)) %>%
+    filter(!is.na(taxonomic_group)) %>%
+    select(scientific_name, ELCODE, taxonomic_group) %>%
+    distinct() %>%
+    mutate(scientific_name = tolower(scientific_name))
 
   write_csv(key, "data/tax_key.csv")
 } else {
