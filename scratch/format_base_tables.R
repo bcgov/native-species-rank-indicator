@@ -114,8 +114,6 @@ ref <- ref.0 %>%
   select(year, scientific_name, common_name,
            prov_status, prov_status_review_date,
            prov_status_change_date) %>%
-    #     prov_status_review_date = year(prov_status_review_date),
-    #     prov_status_change_date = year(prov_status_change_date)) %>%
   mutate(scientific_name = tolower(scientific_name)) %>%
   right_join(key, by = "scientific_name")
 
