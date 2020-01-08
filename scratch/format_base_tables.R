@@ -135,14 +135,14 @@ col.names.fn <- function(x) {
   new.col.names
 }
 
-group.oi <- c("Odonata", "Lepidoptera", "Molluscs")
+group.oi <- c("IIODO" = "Odonata", "IILEP" = "Lepidoptera", "IMBIV" = "Molluscs")
 
 output_dirs <- file.path("data", "Inverts", "Contractor_datasets", group.oi)
 lapply(output_dirs, dir.create, showWarnings = FALSE, recursive = TRUE)
 
 for (i in seq_along(group.oi)) {
-  i <- 3
-  group <- group.oi[i]
+  elcode_abbrev <- names(group.oi)[i]
+  group <- group.oi[elcode_abbrev]
   gref <- ref %>%
     filter(taxonomic_group ==  group) %>%
     select(scientific_name, year, prov_status) %>%
