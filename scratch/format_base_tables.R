@@ -144,8 +144,8 @@ for (i in seq_along(group.oi)) {
   elcode_abbrev <- names(group.oi)[i]
   group <- group.oi[elcode_abbrev]
   gref <- ref %>%
-    filter(taxonomic_group ==  group) %>%
-    select(scientific_name, year, prov_status) %>%
+    filter(taxonomic_group == group) %>%
+    select(scientific_name, ELCODE, year, prov_status) %>%
     spread(year, prov_status) %>%
     mutate(scientific_name = tolower(scientific_name)) %>%
     distinct()
