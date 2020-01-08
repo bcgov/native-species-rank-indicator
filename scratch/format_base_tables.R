@@ -81,7 +81,7 @@ if (!file.exists("data/tax_key_full.csv")) {
 
   sum(is.na(full_key$ELCODE))
 
-  key <- full_key %>% mutate(taxonomic_group = case_when(
+  full_key <- full_key %>% mutate(taxonomic_group = case_when(
     # startsWith(ELCODE, "AA")  ~ "Amphibians",
     # startsWith(ELCODE, "AB")  ~ "Breeding Birds",
     # startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
@@ -91,13 +91,15 @@ if (!file.exists("data/tax_key_full.csv")) {
     startsWith(ELCODE, "IIODO") ~ "Odonata",
     startsWith(ELCODE, "IMBIV") ~ "Molluscs",
     TRUE ~ NA_character_)) %>%
-    filter(!is.na(taxonomic_group)) %>%
+    filter(!is.na(taxonomic_group))
+
+  key <- full_key %>%
     select(scientific_name, ELCODE, taxonomic_group) %>%
     distinct() %>%
     mutate(scientific_name = tolower(scientific_name))
 
   # Create a key with just one row for each ELCODE to use for authoritative names
-  latest_key <- group_by(full_key, ELCODE) %>%
+  latest_key <- group_by(full_key, ELCODE, taxonomic_group) %>%
     filter(year == max(year)) %>%
     select(-year)
 
