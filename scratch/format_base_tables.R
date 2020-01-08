@@ -97,12 +97,13 @@ key <- key %>% mutate(taxonomic_group = case_when(
 
 
 ref <- ref.0 %>%
-  select(year, scientific_name, common_name, ELCODE,
+  select(year, scientific_name, common_name,
            prov_status, prov_status_review_date,
            prov_status_change_date) %>%
     #     prov_status_review_date = year(prov_status_review_date),
     #     prov_status_change_date = year(prov_status_change_date)) %>%
-  left_join(key)
+  mutate(scientific_name = tolower(scientific_name)) %>%
+  right_join(key, by = "scientific_name")
 
 # Run through each group and add pre2004 to historic data sets.
 
