@@ -65,20 +65,26 @@ ref.0 <- read_csv(hist.data,
 
 # create a key with all historic ELcode, names, scinema , Taxanomic
 key <- ref.0 %>%
-  select(scientific_name, ELCODE) %>%
-  mutate(taxonomic_group = case_when(
-    startsWith(ELCODE, "AA")  ~ "Amphibians",
-    startsWith(ELCODE, "AB")  ~ "Breeding Birds",
-    startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
-    startsWith(ELCODE, "AM")  ~ "Mammals",
-    startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
-    startsWith(ELCODE, "IIL") ~ "Lepidoptera",
-    startsWith(ELCODE, "IIO") ~ "Odonata",
-    startsWith(ELCODE, "IM")  ~ "Molluscs",
-    TRUE ~ NA_character_)) %>%
+  select(scientific_name) %>%
+  distinct() %>%
+  left_join(ref.0 %>%
+              select(scientific_name, ELCODE) %>%
+              filter(!is.na(ELCODE)) %>%
+              distinct())
+key <- key %>% mutate(taxonomic_group = case_when(
+    # startsWith(ELCODE, "AA")  ~ "Amphibians",
+    # startsWith(ELCODE, "AB")  ~ "Breeding Birds",
+    # startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
+    # startsWith(ELCODE, "AM")  ~ "Mammals",
+    # startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
+  startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
+  startsWith(ELCODE, "IIODO") ~ "Odonata",
+  startsWith(ELCODE, "IMBIV") ~ "Molluscs",
+  TRUE ~ NA_character_)) %>%
   filter(!is.na(taxonomic_group)) %>%
-  select(scientific_name, taxonomic_group) %>%
-  distinct()
+  select(scientific_name, ELCODE, taxonomic_group) %>%
+  distinct() %>%
+  mutate(scientific_name = tolower(scientific_name))
 
 
 ref <- ref.0 %>%
