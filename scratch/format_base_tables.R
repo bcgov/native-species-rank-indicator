@@ -63,6 +63,15 @@ ref.0 <- read_csv(hist.data,
          !is.na(scientific_name)) %>%
   mutate(scientific_name = tolower(trimws(scientific_name, "both")))
 
+# write out cut of data for contractors
+
+inv <- ref.0 %>%
+  filter(name_category %in% c("Invertebrate","Invertebrate Animal"))
+output_dirs <- file.path("data", "Inverts", "Contractor_datasets")
+write_csv(inv, file.path(output_dirs, "BCSEE_inverts.csv"))
+
+
+
 if (!file.exists("data/tax_key_full.csv")) {
 
   # create a key with all historic ELcode, names, scinema , Taxanomic
