@@ -48,33 +48,63 @@ new.data <- file.path(("data"),
 #  "BCSEE_Plants_Animals_final.csv"
 #)
 
-new.0 <- read_csv(new.data ,
-                  col_names = c("Year", "Scientific_name", "Scientific_Name_old", "Common_name",
-                                "foo1", "foo2", "Element_code", "foo3", "foo4",
-                                "Prov_Status", "Prov Status Review Date",
-                                "Prov Status Change Date",
-                                paste0("foo1", seq_len(2)), "BC List",
-                                paste0("foo2", seq_len(22)), "Origin",
-                                paste0("foo3", seq_len(10))))
+new.0 <- read_csv(new.data,
+                  col_types = cols_only(
+                    Year = col_integer(),
+                    `Scientific Name` = col_character(),
+                    `English Name` = col_character(),
+                    `Element Code` = col_character(),
+                    `Prov Status` = col_character(),
+                    `Prov Status Review Date` = col_character(),
+                    `Prov Status Change Date` = col_character(),
+                    `Name Category` = col_character()
+                  )
+) %>%
+  rename_all(function(x) tolower(gsub("\\s+", "_", x))) %>%
+  filter(!name_category %in% c("Vascular Plant", "Non-Vascular Plant",
+                               "Nonvascular Plant", "Fungus",
+                               "International Vegetation Classification")) %>%
+  rename(ELCODE = element_code,
+         common_name = english_name) %>%
+  filter(!grepl("^(Search|Sort|Open|Animals)", scientific_name),
+         !is.na(scientific_name)) %>%
+  mutate(scientific_name = tolower(trimws(scientific_name, "both")))
 
-new.0 <- new.0[-1,]
+
+key <- read_csv("data/tax_key_full.csv")
+latest_key <- read_csv("data/tax_key_latest.csv")
+
 
 new.1  <- new.0 %>%
-  select(c("Year", "Scientific_name", "Scientific_Name_old", "Common_name","Element_code",
-           "Prov_Status", "Prov Status Review Date",
-           "Prov Status Change Date","BC List","Origin")) %>%
+  select(year, scientific_name, common_name, ELCODE,
+         prov_status, prov_status_review_date,
+         prov_status_change_date) %>%
+  mutate(scientific_name = tolower(scientific_name)) %>%
+  left_join(key, by = "scientific_name") %>% # get ELCODES where there weren't
+  # replace scientific name with latest
+  left_join(latest_key, by = "ELCODE", suffix = c(".old", "")) %>%
+  mutate(scientific_name = case_when(
+    is.na(scientific_name) ~ scientific_name.old,
+    TRUE ~ scientific_name
+  )) %>%
+  select(-scientific_name.old)
+
+
   mutate(ELCODE = Element_code,
          `Prov Status Review Date` = year(`Prov Status Review Date`),
          `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
-  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibians",
-                                  ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
-                                         ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
-                                                ifelse(startsWith(ELCODE, "AM"), "Mammals",
-                                                       ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
-                                                              ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
-                                                                     ifelse(startsWith(ELCODE, "IIO"),"Odonata",
-                                                                            ifelse(startsWith(ELCODE, "IM"), "Molluscs",
-                                                                                   NA))))))))) %>%
+  mutate(Taxonomic_Group = case_when(
+    startsWith(ELCODE, "AA")  ~ "Amphibians",
+    startsWith(ELCODE, "AB")  ~ "Breeding Birds",
+    startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
+    startsWith(ELCODE, "AM")  ~ "Mammals",
+    startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
+    startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
+    startsWith(ELCODE, "IIODO") ~ "Odonata",
+    startsWith(ELCODE, "IMBIV") ~ "Molluscs",
+    TRUE ~ NA_character_)) %>%
+  filter(!is.na(Taxonomic_Group))
+
 
   select(-c("Element_code")) %>%
   mutate(Scientific_Name = tolower(Scientific_name))
@@ -229,6 +259,8 @@ sp.checks <- all %>%
 
 
 ## NOTE THIS FILE HAS BEEN MANUALLY EDITED _ PLEASE DONT WRITE OVER
+# Also saved on SOE folder"O:\Operations ORCS\Data - Working\plants_animals\trends-status-native-species\2019"
+
 
 vdata <- read_csv(file.path("data", "consolidated_output_edit.csv"))
 
@@ -277,6 +309,7 @@ indata <- indata %>%
   gather("Year", "SRank", 5:25) %>%
   drop_na("SRank")
 
+# may need to areview this part as dropping species
 
 am <- c(1992,1998, 2002, 2010, 2016, 2018)
 bb <- c(1992, 1997, 2001, 2006, 2009, 2012, 2015, 2018)
