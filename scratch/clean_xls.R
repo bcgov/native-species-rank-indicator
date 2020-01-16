@@ -135,20 +135,58 @@ all <- all %>%
 # Manually verify data  ---------------------------------------------------
 
 # Currently manually vetted data is stored here: consolidated_output_edit.csv
+## NOTE THIS FILE HAS BEEN MANUALLY EDITED _ PLEASE DONT WRITE OVER
 # I used Species_manually_adjusted.csv to keep track of manual changes mades to the Species_to_check_manually.csv
 # This was mostly name changes and duplicates in common name subspecies (spacing / upper/lower)
 
-# sent list of specied with non-matching codes to Leah and Lea to review. Their review (SOE_2019_review.csv stored in the data folder).
+# Leah Ramsey reviewed species with non-matching codes.
+# Their review (SOE_2019_review.csv stored in the data folder).
+# --------------------------------------------------------------------------
 
-# then incorporated their changes manually into the consoldidated_output_edit.csv
+
+# Read in Leah's revisions and incorporated into the "consolidated_output_edit.csv" above.
+
+toedit <- read_csv(file.path("data", "SOI_2019_review_GP.csv")) %>%
+  select(-c(last_rank, current_SRANK, `Proposed ACTION`, `Leah's comments`, `Date change`,
+            PREV_SRANK, NEW_RANK, CODE, REASON_DESC, COMMENTS)) %>%
+ rename_all(function(x) tolower(gsub("\\s+", "_", x)))
 
 
 
-# still to do:
-# - check 2012x and 2012y and where different - sent to Leah and Lea
 
-# Adjust individual rows
-vdata <- read_csv(file.path("data", "consolidated_output_edit.csv"))
+
+
+vdata <- file.path("data", "consolidated_output_edit.csv")
+
+vdata.0 <- read_csv(vdata,
+                  col_types = cols_only(
+                    `Taxonomic_Group` = col_character(),
+                    `Scientific_Name` = col_character(),
+                    `Common_name` = col_character(),
+                    `ELCODE` = col_character(),
+                    `1992` = col_character(),
+                    `1995`  = col_character(),
+                    `1997`  = col_character(),
+                    `1998` = col_character(),
+                    `2001` = col_character(),
+                    `2002` = col_character(),
+                    `2003` = col_character(),
+                    `2005` = col_character(),
+                    `2006` = col_character(),
+                    `2007` = col_character(),
+                    `2008` = col_character(),
+                    `2010` = col_character(),
+                    `2011` = col_character(),
+                    `2012.x` = col_character(),
+                    `2012.y`= col_character(),
+                    `2013` = col_character(),
+                    `2014` = col_character(),
+                    `2015` = col_character(),
+                    `2016` = col_character(),
+                    `2017` = col_character(),
+                    `2018`  = col_character()
+                  )) %>%
+  rename_all(function(x) tolower(gsub("\\s+", "_", x)))
 
 
 
