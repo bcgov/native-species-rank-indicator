@@ -23,23 +23,24 @@ indata <- readRDS(file.path("data","indata.r"))
 
 # check the number of species by types:
 sp.type <- indata %>%
-  group_by(Origin) %>%
-  summarise(count = n())
-
-# check the number of species by BC List
-sp.catergory <- indata %>%
-  group_by(`BC List`) %>%
+  group_by(origin) %>%
   summarise(count = n())
 
 
 # check the number of species by BC List
 sp.catergory <- indata %>%
-  group_by(Origin, `BC List`) %>%
+  group_by(`bc_list`) %>%
+  summarise(count = n())
+
+
+# check the number of species by BC List
+sp.catergory <- indata %>%
+  group_by(origin, bc_list) %>%
   summarise(count = n())
 
 
 # remove the exotics
 indata <- indata %>%
-  filter(!Origin %in% c("Exotic", "Unknown/Undetermined"))
+  filter(!origin %in% c("Exotic", "Unknown/Undetermined"))
 
 saveRDS(indata, file.path("data","indata.R"))
