@@ -256,7 +256,10 @@ xx <- indata %>%
 
 indata <- xx %>%
   filter(keep == TRUE) %>%
-  select(-(keep))
+  select(-(keep)) %>%
+  select(taxonomic_group, scientific_name,
+         common_name, elcode, bc_list, origin,
+         year, rank)
 
 
 #write.csv(indata, file.path("data", "indata.csv"), row.names = FALSE)
