@@ -78,7 +78,8 @@ new.0 <- read_csv(new.data,
 
 bc_key <- new.0 %>% select(year, scientific_name, ELCODE, bc_list, origin) %>%
   group_by(scientific_name) %>%
-  filter(year == max(year))
+  filter(year == max(year)) %>%
+  select(-year)
 
 
 goi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles", "NA")
@@ -197,44 +198,47 @@ vdata <- vdata.0 %>%
   bind_rows(toedit) %>%
   left_join(bc_key) # join the latest BC list / origin information
 
-
-# error check
-#sp.check <-  vdata %>%
-#  group_by(elcode) %>%
-#  summarise(count = n()) %>%
-#  filter(count > 1)
-
-#sp.check
+# # error check
+# sp.check <-  vdata %>%
+#   group_by(elcode) %>%
+#   summarise(count = n()) %>%
+#   filter(count > 1)
 
 
+# flag species which 2012 date does not match between data sets.
+vdata  <- vdata %>%
+  mutate(match2012 = ifelse(`2012.y` ==`2012.x`, 0, 1))
 
-# fill in the NA's across the years where no rankings are assigned
+#unmatched <- vdata%>%
+#  filter(vdata$match2012 == 1 ) %>%
+#  select(scientific_name, common_name, ELCODE,`2012.x`, `2012.y`)
 
+##checked individuals with unmatched ranking (need to adjust four species where sub populations are created)
+ # "coturnicops noveboracensis" = 2012.x
+ # "brachyramphus marmoratus"= 2012.x
+ # "empidonax wrightii"= 2012.x
+ # "salvelinus malma - southern lineage"= 2012.x ## NA - from 2004 - 2011
+ # "salvelinus malma - northern lineage"= 2012.x ## NA - from 2004 - 2011
+ # "hybognathus hankinsoni - western arctic group" = 2012.x ## NA - from 2004 - 2011
+ # "hybognathus hankinsoni - pacific group" = 2012.x ## NA - from 2004 - 2011
+ # "sander vitreus"= 2012.x
 
+vdata <- vdata %>%
+  select(-c(`2012.y`, match2012, ELCODE)) %>%   # remove the old 2012 data sets. (as confirmed above)
+  mutate(`2012` =`2012.x`) %>%
+  select(-`2012.x`) %>%
+  select(c(bc_list, origin, everything())) %>%
+  gather("year", "rank", 7:27) %>%
+  mutate(year = as.numeric(year)) %>%
+  group_by(scientific_name) %>%
+  arrange( year, .by_group = TRUE) %>%
+  fill(rank, .direction = "down") %>%
+  ungroup()
 
+indata <- vdata %>%
+  drop_na(rank)
 
-
-
-
-
-
-
-origin <- new.1 %>%
-  select(Scientific_name, Origin, `BC List`) %>%
-  mutate(Scientific_Name = tolower(Scientific_name),
-         `BC List` = tolower(`BC List`)) %>%
-  filter(!is.na(Origin)) %>%
-  distinct()
-
-# set up years of assessment : still to do :
-indata <- left_join(vdata, origin) %>%
-  select(-c(CheckSciame, Update_2012_data, Scientific_name))
-
-indata <- indata %>%
-  gather("Year", "SRank", 5:25) %>%
-  drop_na("SRank")
-
-# may need to review this part as dropping species
+#define the years of assesment per group
 
 am <- c(1992,1998, 2002, 2010, 2016, 2018)
 bb <- c(1992, 1997, 2001, 2006, 2009, 2012, 2015, 2018)
@@ -244,11 +248,11 @@ rt <- c(1992, 1998, 2002, 2008, 2012, 2018)
 
 
 xx <- indata %>%
-  mutate(keep = ifelse(Taxonomic_Group == 'Amphibians' & Year %in% am, T,
-                       ifelse(Taxonomic_Group == "Breeding Birds" & Year %in% bb, T,
-                              ifelse(Taxonomic_Group == "Freshwater Fish"  & Year %in% ff, T,
-                                     ifelse(Taxonomic_Group == "Mammals"  & Year %in% ma, T,
-                                            ifelse(Taxonomic_Group == "Reptiles and Turtles"  & Year %in% rt, T,F))))))
+  mutate(keep = ifelse(taxonomic_group == 'Amphibians' & year %in% am, T,
+                       ifelse(taxonomic_group == "Breeding Birds" & year %in% bb, T,
+                              ifelse(taxonomic_group == "Freshwater Fish"  & year %in% ff, T,
+                                     ifelse(taxonomic_group == "Mammals"  & year %in% ma, T,
+                                            ifelse(taxonomic_group == "Reptiles and Turtles"  & year %in% rt, T,F))))))
 
 indata <- xx %>%
   filter(keep == TRUE) %>%
