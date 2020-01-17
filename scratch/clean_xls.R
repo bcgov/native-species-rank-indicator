@@ -58,7 +58,9 @@ new.0 <- read_csv(new.data,
                     `Prov Status` = col_character(),
                     `Prov Status Review Date` = col_character(),
                     `Prov Status Change Date` = col_character(),
-                    `Name Category` = col_character()
+                    `Name Category` = col_character(),
+                    `BC List` = col_character(),
+                    `Origin` = col_character()
                   )
 ) %>%
   rename_all(function(x) tolower(gsub("\\s+", "_", x))) %>%
@@ -72,6 +74,11 @@ new.0 <- read_csv(new.data,
   mutate(scientific_name = tolower(trimws(scientific_name, "both")),
          prov_status_review_date = year(prov_status_review_date),
          prov_status_change_date = year(prov_status_change_date))
+
+
+bc_key <- new.0 %>% select(year, scientific_name, ELCODE, bc_list, origin) %>%
+  group_by(scientific_name) %>%
+  filter(year == max(year))
 
 
 goi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles", "NA")
@@ -152,21 +159,17 @@ toedit <- read_csv(file.path("data", "SOI_2019_review_GP.csv")) %>%
  rename_all(function(x) tolower(gsub("\\s+", "_", x)))
 
 
+vdata.0 <- file.path("data", "consolidated_output_edit.csv")
 
-
-
-
-vdata <- file.path("data", "consolidated_output_edit.csv")
-
-vdata.0 <- read_csv(vdata,
+vdata.0 <- read_csv(vdata.0,
                   col_types = cols_only(
                     `Taxonomic_Group` = col_character(),
                     `Scientific_Name` = col_character(),
                     `Common_name` = col_character(),
                     `ELCODE` = col_character(),
                     `1992` = col_character(),
-                    `1995`  = col_character(),
-                    `1997`  = col_character(),
+                    `1995` = col_character(),
+                    `1997` = col_character(),
                     `1998` = col_character(),
                     `2001` = col_character(),
                     `2002` = col_character(),
@@ -184,48 +187,37 @@ vdata.0 <- read_csv(vdata,
                     `2015` = col_character(),
                     `2016` = col_character(),
                     `2017` = col_character(),
-                    `2018`  = col_character()
+                    `2018` = col_character()
                   )) %>%
   rename_all(function(x) tolower(gsub("\\s+", "_", x)))
 
 
+vdata <- vdata.0 %>%
+  filter(!scientific_name %in% unique(toedit$scientific_name)) %>%
+  bind_rows(toedit) %>%
+  left_join(bc_key) # join the latest BC list / origin information
 
 
-## NOTE THIS FILE HAS BEEN MANUALLY EDITED _ PLEASE DONT WRITE OVER
-# Also saved on SOE folder"O:\Operations ORCS\Data - Working\plants_animals\trends-status-native-species\2019"
+# error check
+#sp.check <-  vdata %>%
+#  group_by(elcode) %>%
+#  summarise(count = n()) %>%
+#  filter(count > 1)
+
+#sp.check
 
 
-vdata <- read_csv(file.path("data", "consolidated_output_edit.csv"))
 
-sp.check <-  vdata %>%
-  group_by(ELCODE) %>%
-  summarise(count = n()) %>%
-  filter(count > 1)
+# fill in the NA's across the years where no rankings are assigned
 
-sp.check
 
-# add the bc origin and BC list to the data set
 
-new.1  <- new.0 %>%
-  select(c("Year", "Scientific_name", "Scientific_Name_old", "Common_name","Element_code",
-           "Prov_Status", "Prov Status Review Date",
-           "Prov Status Change Date","BC List","Origin")) %>%
-  mutate(ELCODE = Element_code,
-         `Prov Status Review Date` = year(`Prov Status Review Date`),
-         `Prov Status Change Date` = year(`Prov Status Change Date`)) %>%
-  mutate(Taxonomic_Group = ifelse(startsWith(ELCODE,"AA"),"Amphibians",
-                                  ifelse(startsWith(ELCODE,"AB"), "Breeding Birds",
-                                         ifelse(startsWith(ELCODE,"AF"), "Freshwater Fish",
-                                                ifelse(startsWith(ELCODE, "AM"), "Mammals",
-                                                       ifelse(startsWith(ELCODE, "AR"), "Reptiles and Turtles",
-                                                              ifelse(startsWith(ELCODE, "IIL"), "Lepidoptera",
-                                                                     ifelse(startsWith(ELCODE, "IIO"),"Odonata",
-                                                                            ifelse(startsWith(ELCODE, "IM"), "Molluscs",
-                                                                                   NA))))))))) %>%
 
-  select(-c("Element_code")) %>%
-  mutate(Scientific_Name = tolower(Scientific_name)) %>%
-  filter(Year == 2018)
+
+
+
+
+
 
 origin <- new.1 %>%
   select(Scientific_name, Origin, `BC List`) %>%
