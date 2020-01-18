@@ -4,3 +4,9 @@
 /data
 /out
 .DS_Store
+.Ruserdata
+^Rplots.pdf$
+*.svg
+.html
+/print_ver/grizzly-bear-status-indicator_cache/
+/print_ver/grizzly-bear-status-indicator_files/
