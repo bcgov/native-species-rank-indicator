@@ -1,5 +1,5 @@
 ---
-topic:  "plants-and-animals"
+topic: "plants-and-animals"
 title: "Trends in Status of Native Species in B.C. (1992 - 2019)"
 output: envreportutils.internal::print_ver
 params:
@@ -20,38 +20,13 @@ params:
 
 -->
 
-```{r echo = FALSE, include=params$draft, results='asis'}
-cat("\\begin{center}
-\\fbox{
-  \\begin{minipage}[c]{14cm}
- 
-   \\begingroup\\centering{\\textbf{DRAFT – NOT FOR DISTRIBUTION}}
-   
-    \\endgroup
-    
-    \\vspace{1mm}
-   
-    \\text{This DRAFT public reporting product is under review and may change. It is not intended}
-    \\text{to be shared, cited or used at this time. Please contact Environmental Reporting BC program}
-    \\text{staff if you have questions about the content. }
-   
-  \\end{minipage}
-}
-\\end{center}")
-```
-
-
 
 * **Within B.C. species are ranked by conservation status**. Ranks are assigned on a scale of S1 (high conservation concern) to S5, low concervation concern. Species are reassesssed approximately every four years. 
 
 * **We assessed overal conservation status of groups of species from 1992 - 2018 by calculating a conservation status index.** The Conservation Status Index, shown in the graph below, reflects the overall conservation status of a group of species at a given time. We assessed chnages in Conservation Status Index over time to assess how the overall status of a group of species is changing. Confidence intervals for each group indicate how much variation is within each group. The larger the confidence intervals the wider the spread of ranks within the same group. 
 
 
-```{r taxonomy , echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, fig.cap = "Conservation Status Index for four vertebrate species groups in British Columbia, 1992-2018", results = 'asis', out.width='0.95\\linewidth', fig.align = 'center'}
 
-knitr::include_graphics("./csi_tax.png")
-
-```
 
 
 The status of most vertebrate groups in British Columbia has declined since 1992—the year the B.C. Conservation Data Centre began assessing the status of species in British Columbia.
@@ -63,12 +38,6 @@ B.C. vertebrate groups have different levels of natural rarity. For example, mos
 Freshwater Fish showed a decline since 2014 largely due to increase in species 
 
 
-
-```{r bc list , echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, fig.cap = "Conservation Status Index for four listed groups in British Columbia, 1992-2018", results = 'asis', out.width='0.95\\linewidth', fig.align = 'center'}
-
-knitr::include_graphics("./csi_bclist.png")
-
-```
 
 
 General notes 
