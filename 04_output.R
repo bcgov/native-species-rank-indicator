@@ -16,17 +16,18 @@
 library(ggplot2)
 library(dplyr)
 library(envreportutils)
+library(plotly)
 
 
 csi.plot <- csi %>%
-  group_by(Taxonomic_Group, Year) %>%
+  group_by(taxonomic_group, year) %>%
   summarize(mean = mean(mean_wt), lci = mean(lci), uci = mean(uci), N = N) %>%
-  mutate(Year = as.numeric(Year))
+  mutate(year = as.numeric(year))
 
 
 # add plotting parameters
 
-x_scale <- scale_x_continuous(limits = c(1990, max(csi.plot$Year) + 1),
+x_scale <- scale_x_continuous(limits = c(1990, max(csi.plot$year) + 1),
                               breaks = seq(1992, 2018, 4),
                               expand = c(0,0))
 
@@ -40,8 +41,8 @@ normpal <- c("#e41a1c", "#377eb8","#4daf4a",  "#4daf4a")
 
 # plot facet plot
 
-p1 <- ggplot(csi.plot, aes(x = Year, y = mean, group = Taxonomic_Group)) + # same issue here as line below
-  facet_wrap(~ Taxonomic_Group) +
+p1 <- ggplot(csi.plot, aes(x = year, y = mean, group = taxonomic_group)) + # same issue here as line below
+  facet_wrap(~ taxonomic_group) +
   scale_colour_manual(values= normpal) +
   geom_point(aes(y = mean), size = 2) +
   geom_text(aes(label=N), vjust=2, col= " dark grey", size = 3) +
@@ -51,13 +52,10 @@ p1 <- ggplot(csi.plot, aes(x = Year, y = mean, group = Taxonomic_Group)) + # sam
   x_scale
 
 
-p <- plot_ly(p1)
-chart_link = plotly_POST(p, filename="facetwrap/basic")
-
 
 # or the plotly option
-p1 <- ggplot(csi.plot, aes(x = Year, y = mean)) + # same issue here as line below
-  facet_wrap(~ Taxonomic_Group) +
+p1 <- ggplot(csi.plot, aes(x = year, y = mean)) +
+  facet_wrap(~ taxonomic_group) +
   scale_colour_manual(values= normpal) +
   geom_point(aes(y = mean), size = 2) +
   #geom_text(aes(label=N), vjust=2, col= " dark grey", size = 3) +
@@ -77,16 +75,16 @@ p <- ggplotly(p1)
 
 
 csi.bc.plot <- csi_bc %>%
-  group_by(`BC List`, Year) %>%
+  group_by(bc_list, year) %>%
   summarize(mean = mean(mean_wt), lci = mean(lci), uci = mean(uci))
 
 csi.bc.plot <- csi.bc.plot %>%
-  mutate(Year = as.numeric(Year)) %>%
-  filter(!`BC List` %in% c("extinct", "unknown", "no status"))
+  mutate(year = as.numeric(year)) %>%
+  filter(!bc_list %in% c("extinct", "unknown", "no status"))
 
 
-p2 <- ggplot(csi.bc.plot, aes(x = Year, y = mean, group = `BC List`)) + # same issue here as line below
-  facet_wrap(~ `BC List`) +
+p2 <- ggplot(csi.bc.plot, aes(x = year, y = mean, group = bc_list)) + # same issue here as line below
+  facet_wrap(~ bc_list) +
   scale_colour_manual(values= normpal) +
   geom_point(aes(y = mean), size = 2) +
   geom_line(aes(y = mean)) +
