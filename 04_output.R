@@ -54,15 +54,7 @@ p1 <- ggplot(csi.plot, aes(x = year, y = mean, group = taxonomic_group)) + # sam
 
 
 # or the plotly option
-p1 <- ggplot(csi.plot, aes(x = year, y = mean)) +
-  facet_wrap(~ taxonomic_group) +
-  scale_colour_manual(values= normpal) +
-  geom_point(aes(y = mean), size = 2) +
-  #geom_text(aes(label=N), vjust=2, col= " dark grey", size = 3) +
-  geom_line(aes(y = mean)) +
-  geom_ribbon(aes(ymin = lci, ymax = uci), alpha = 0.2) +
-  theme_soe() +
-  x_scale
+
 
 
 p <- ggplotly(p1)
@@ -93,7 +85,7 @@ p2 <- ggplot(csi.bc.plot, aes(x = year, y = mean, group = bc_list)) + # same iss
   x_scale
 
 
-# save plots
+# save plots function :
 
 multi_plot <- function(plotdata, filename) {
   svg_px( paste0(filename,".svg"), width = 500, height = 400)
