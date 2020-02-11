@@ -14,6 +14,7 @@
 remotes::install_github("bcgov/ranktrends")
 
 library(ranktrends)
+library(tidyr)
 
 
 # or read in a local copy temporarily
