@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 
+# remotes::install_github("bcgov/ranktrends")
+
 library(dplyr)
 library(ranktrends)
 
