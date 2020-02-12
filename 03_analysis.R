@@ -11,8 +11,9 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 
-remotes::install_github("bcgov/ranktrends")
+#remotes::install_github("bcgov/ranktrends")
 
+library(dplyr)
 library(ranktrends)
 library(tidyr)
 
@@ -23,8 +24,15 @@ indata <- readRDS(file.path("data","indata.r"))
 # note this is native sp.only
 
 status_data_wts <- indata %>%
-  mutate(parsed_rank_single = ranks_to_numeric(rank, simplify = TRUE, round_fun = min),  # tried to extract 1st value ? not working
+  mutate(parsed_rank_single = ranks_to_numeric(rank, simplify = FALSE, round_fun = min),  # tried to extract 1st value ? not working
          wts = 5 - parsed_rank_single)
+
+
+#status_data_wts <- indata %>%
+#  mutate(parsed_rank_single = ranks_to_numeric(rank, simplify = FALSE)#,  # tried to extract 1st value ? not working
+#      #   wts = 5 - parsed_rank_single)
+#status
+
 
 status_complete <- status_data_wts %>%
   group_by(taxonomic_group) %>%
