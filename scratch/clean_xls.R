@@ -10,9 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-#remotes::install_github("bcgov/bcgovr")
-#remotes::install_github("bcgov/envreportutils")
-
 library(bcgovr)
 library(readxl)
 library(cellranger) # letter_to_num
@@ -108,7 +105,6 @@ new.1  <- new.0 %>%
   spread(year, prov_status) %>%
   distinct()
 
-
 # merge hist and new data sets:
 all <- full_join(new.1, hist.data,  by = "scientific_name") %>%
   mutate(taxonomic_group = case_when(
@@ -128,7 +124,7 @@ all  <- all %>%
   mutate(Update_2012_data = ifelse(`2012.y` ==`2012.x`, 0, 1))
 
 unmatched <- all %>%
-  filter(all$match2012 == 0 ) %>%
+  filter(all$Update_2012_data == 1 ) %>%
   select(scientific_name, common_name, ELCODE,`2012.x`, `2012.y`)
 
 all <- all %>%
@@ -138,6 +134,12 @@ all <- all %>%
          "Update_2012_data" )
 
 #write.csv(all, file.path("data", "consolidated_output.csv"), row.names = FALSE)
+
+# check groups
+new <- all %>%
+  group_by(taxonomic_group, prov_status_review_date) %>%
+  filter(!is.na(rank)) %>%
+  summarise(count = n())
 
 
 # Manually verify data  ---------------------------------------------------
@@ -198,8 +200,8 @@ vdata <- vdata.0 %>%
   bind_rows(toedit) %>%
   left_join(bc_key) # join the latest BC list / origin information
 
-# # error check
-# sp.check <-  vdata %>%
+ # error check
+ #sp.check <-  vdata %>%
 #   group_by(elcode) %>%
 #   summarise(count = n()) %>%
 #   filter(count > 1)
@@ -232,34 +234,91 @@ vdata <- vdata %>%
   mutate(year = as.numeric(year)) %>%
   group_by(scientific_name) %>%
   arrange( year, .by_group = TRUE) %>%
-  fill(rank, .direction = "down") %>%
+  #fill(rank, .direction = "down") %>%
   ungroup()
 
-indata <- vdata %>%
-  drop_na(rank)
-
-#define the years of assesment per group
-
-am <- c(1992,1998, 2002, 2010, 2016, 2018)
-bb <- c(1992, 1997, 2001, 2006, 2009, 2012, 2015, 2018)
-ff <- c(1992, 1998, 2001, 2005, 2010, 2012, 2018, 2019)
-ma <- c(1992, 1995, 2001, 2003, 2006, 2007, 2011, 2015, 20017, 2018)
-rt <- c(1992, 1998, 2002, 2008, 2012, 2018)
+#indata <- vdata %>%
+#  drop_na(rank)
 
 
-xx <- indata %>%
-  mutate(keep = ifelse(taxonomic_group == 'Amphibians' & year %in% am, T,
-                       ifelse(taxonomic_group == "Breeding Birds" & year %in% bb, T,
-                              ifelse(taxonomic_group == "Freshwater Fish"  & year %in% ff, T,
-                                     ifelse(taxonomic_group == "Mammals"  & year %in% ma, T,
-                                            ifelse(taxonomic_group == "Reptiles and Turtles"  & year %in% rt, T,F))))))
+#define the years of assesment per group # this needs some reworking
 
-indata <- xx %>%
-  filter(keep == TRUE) %>%
-  select(-(keep)) %>%
-  select(taxonomic_group, scientific_name,
-         common_name, elcode, bc_list, origin,
-         year, rank)
+# am <- c(1992,1998, 2002, 2010, 2018)
+# bb <- c(1992, 1997, 2001, 2005, 2009, 2015, 2018)
+# ff <- c(1992, 1998, 2001, 2005, 2010, 2012, 2018, 2019)
+# ma <- c(1992, 1995, 2001, 2003, 2006, 2007, 2011, 2015, 20017, 2018)
+# rt <- c(1992, 1998, 2002, 2008, 2012, 2018)
+#
+# xx <- indata %>%
+#   mutate(keep = ifelse(taxonomic_group == 'Amphibians' & year %in% am, T,
+#                        ifelse(taxonomic_group == "Breeding Birds" & year %in% bb, T,
+#                               ifelse(taxonomic_group == "Freshwater Fish"  & year %in% ff, T,
+#                                      ifelse(taxonomic_group == "Mammals"  & year %in% ma, T,
+#                                             ifelse(taxonomic_group == "Reptiles and Turtles"  & year %in% rt, T,F))))))
+
+#indata <- xx %>%
+#  filter(keep == TRUE) %>%
+#  select(-(keep)) %>%
+#  select(taxonomic_group, scientific_name,
+#         common_name, elcode, bc_list, origin,
+#         year, rank)
+
+
+# remove exotics
+indata <- indata %>%
+  filter(!origin %in% c("Exotic","Unknown/Undetermined"))
+
+keep <- c("Blue", "Yellow", "Red", "Extinct")
+
+x <- indata %>%
+  filter(bc_list %in% keep)
+
+
+# check the number of species by BC List
+#sp.catergory <- x %>%
+#  group_by(`bc_list`) %>%
+#  summarise(count = n())
+
+# check the number of species by BC List
+#sp.catergory <- x %>%
+#  group_by(taxonomic_group, year) %>%
+#  summarise(count = n())
+
+
+# check the non-matching species : ie where present in early reports and not in laters (ie: subspecies vs species)
+
+
+unmatched <- function(tgroup, year1, year2) {
+
+#  tgroup = "Mammals"
+#  year1 = 2007
+#  year2 = 2011
+
+  t1 <- x %>% filter(taxonomic_group == tgroup, year == year1) %>%
+    distinct(scientific_name)
+  t2 <- x %>% filter(taxonomic_group == tgroup, year == year2) %>%
+    distinct(scientific_name)
+  out1 <- anti_join(t2, t1)
+  out2 <- anti_join(t1, t2)
+  out <- bind_rows(out1, out2)
+  out
+}
+
+mammals <- unmatched("Mammals", year1 = 2007, year2 = 2011 )
+reptiles <- unmatched("Reptiles and Turtles", 2008, 2017)
+amphibians <- unmatched("Amphibians", 2010, 2018)
+ff <- unmatched("Freshwater Fish", 2010, 2018)
+bb <- unmatched("Breeding Birds", 2001, 2018)
+
+unmatch_sp <- bind_rows(mammals, reptiles, amphibians, ff, bb)
+
+
+longsp <- unmatch_sp %>%
+    left_join(., vdata.0)
+
+write.csv(longsp, file.path("data", "sp_subsp_check.csv"))
+
+
 
 
 #write.csv(indata, file.path("data", "indata.csv"), row.names = FALSE)
