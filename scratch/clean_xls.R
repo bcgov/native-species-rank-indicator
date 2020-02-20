@@ -78,6 +78,13 @@ bc_key <- new.0 %>% select(year, scientific_name, ELCODE, bc_list, origin) %>%
   filter(year == max(year)) %>%
   select(-year)
 
+# create a maximum year reviewed
+max_year_reviewed <- new.0 %>%
+  group_by(scientific_name, common_name,  ELCODE) %>%
+  summarise(latest_review = max(prov_status_review_date))
+
+
+
 
 goi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles", "NA")
 
@@ -136,10 +143,10 @@ all <- all %>%
 #write.csv(all, file.path("data", "consolidated_output.csv"), row.names = FALSE)
 
 # check groups
-new <- all %>%
-  group_by(taxonomic_group, prov_status_review_date) %>%
-  filter(!is.na(rank)) %>%
-  summarise(count = n())
+#new <- all %>%
+#  group_by(taxonomic_group, prov_status_review_date) %>%
+#  filter(!is.na(rank)) %>%
+#  summarise(count = n())
 
 
 # Manually verify data  ---------------------------------------------------
@@ -240,7 +247,6 @@ vdata <- vdata %>%
 #indata <- vdata %>%
 #  drop_na(rank)
 
-
 #define the years of assesment per group # this needs some reworking
 
 # am <- c(1992,1998, 2002, 2010, 2018)
@@ -265,12 +271,12 @@ vdata <- vdata %>%
 
 
 # remove exotics
-indata <- indata %>%
+indata <- vdata %>%
   filter(!origin %in% c("Exotic","Unknown/Undetermined"))
 
 keep <- c("Blue", "Yellow", "Red", "Extinct")
 
-x <- indata %>%
+indata <- indata %>%
   filter(bc_list %in% keep)
 
 
