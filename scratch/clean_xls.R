@@ -20,6 +20,7 @@ library(stringr)
 library(lubridate)
 library(readr)
 
+source("R/lookup_elcode.R")
 
 # read in data set already formatted (1992 - 2012)
 
@@ -39,12 +40,6 @@ hist.data <- hist.data %>%
 new.data <- file.path(("data"),
                        "BCSEE_Plants_Animals_final.csv"
 )
-
-# or
-#hist.data <- file.path(
-#  soe_path("Operations ORCS/Data - Working/plants_animals/trends-status-native-species/2019/historical_ranks_for_databc"),
-#  "BCSEE_Plants_Animals_final.csv"
-#)
 
 new.0 <- read_csv(new.data,
                   col_types = cols_only(
@@ -71,6 +66,59 @@ new.0 <- read_csv(new.data,
   mutate(scientific_name = tolower(trimws(scientific_name, "both")),
          prov_status_review_date = year(prov_status_review_date),
          prov_status_change_date = year(prov_status_change_date))
+
+
+if (!file.exists("data/tax_key_vert.csv")) {
+
+  # create a key with all historic ELcode, names, scinema , Taxanomic
+  full_key <- new.0 %>%
+    select(scientific_name) %>%
+    distinct() %>%
+    left_join(new.0 %>%
+                select(scientific_name, ELCODE, year) %>%
+                filter(!is.na(ELCODE)) %>%
+                distinct())
+
+  sum(is.na(full_key$ELCODE))
+
+  full_key$ELCODE[is.na(full_key$ELCODE)] <- lookup_elcodes(full_key$scientific_name[is.na(full_key$ELCODE)])
+
+  x <- full_key
+
+  sum(is.na(full_key$ELCODE))
+
+  full_key <- full_key %>% mutate(taxonomic_group = case_when(
+     startsWith(ELCODE, "AA")  ~ "Amphibians",
+     startsWith(ELCODE, "AB")  ~ "Breeding Birds",
+     startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
+     startsWith(ELCODE, "AM")  ~ "Mammals",
+     startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
+     #startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
+     #startsWith(ELCODE, "IIODO") ~ "Odonata",
+     #startsWith(ELCODE, "IMBIV") ~ "Molluscs",
+    TRUE ~ NA_character_)) %>%
+    filter(!is.na(taxonomic_group))
+
+  key <- full_key %>%
+    select(scientific_name, ELCODE, taxonomic_group) %>%
+    distinct() %>%
+    mutate(scientific_name = tolower(scientific_name))
+
+  # Create a key with just one row for each ELCODE to use for authoritative names
+  latest_key <- group_by(full_key, ELCODE, taxonomic_group) %>%
+    filter(year == max(year)) %>%
+    select(-year)
+
+  write_csv(key, "data/tax_key_full.csv")
+  write_csv(latest_key, "data/tax_key_latest.csv")
+} else {
+  key <- read_csv("data/tax_key_full.csv")
+  latest_key <- read_csv("data/tax_key_latest.csv")
+}
+
+
+
+
 
 
 bc_key <- new.0 %>% select(year, scientific_name, ELCODE, bc_list, origin) %>%
