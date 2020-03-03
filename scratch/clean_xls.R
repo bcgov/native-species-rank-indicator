@@ -84,8 +84,14 @@ if (!file.exists("data/tax_key_vert.csv")) {
   full_key$ELCODE[is.na(full_key$ELCODE)] <- lookup_elcodes(full_key$scientific_name[is.na(full_key$ELCODE)])
 
   x <- full_key
+  full_key <- x
 
   sum(is.na(full_key$ELCODE))
+
+
+  # remove the inverts keep the NA's
+  full_key <- full_key %>%
+    filter(is.na(ELCODE)|!startsWith(ELCODE, "I"))
 
   full_key <- full_key %>% mutate(taxonomic_group = case_when(
      startsWith(ELCODE, "AA")  ~ "Amphibians",
@@ -93,11 +99,9 @@ if (!file.exists("data/tax_key_vert.csv")) {
      startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
      startsWith(ELCODE, "AM")  ~ "Mammals",
      startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
-     #startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
-     #startsWith(ELCODE, "IIODO") ~ "Odonata",
-     #startsWith(ELCODE, "IMBIV") ~ "Molluscs",
-    TRUE ~ NA_character_)) %>%
-    filter(!is.na(taxonomic_group))
+     is.na(ELCODE) ~ "data_check_required",
+    TRUE ~ NA_character_)) #%>%
+    #filter(!is.na(taxonomic_group))
 
   key <- full_key %>%
     select(scientific_name, ELCODE, taxonomic_group) %>%
@@ -109,15 +113,12 @@ if (!file.exists("data/tax_key_vert.csv")) {
     filter(year == max(year)) %>%
     select(-year)
 
-  write_csv(key, "data/tax_key_full.csv")
-  write_csv(latest_key, "data/tax_key_latest.csv")
+  write_csv(key, "data/tax_key_vert_full.csv")
+  write_csv(latest_key, "data/tax_key_vert_latest_yr.csv")
 } else {
-  key <- read_csv("data/tax_key_full.csv")
-  latest_key <- read_csv("data/tax_key_latest.csv")
+  key <- read_csv("data/tax_key_vert_full.csv")
+  latest_key <- read_csv("data/tax_key_vert_latest.csv")
 }
-
-
-
 
 
 
@@ -131,6 +132,8 @@ max_year_reviewed <- new.0 %>%
   group_by(scientific_name, common_name,  ELCODE) %>%
   summarise(latest_review = max(prov_status_review_date))
 
+
+## THis part needs to be fixed =
 
 
 
