@@ -68,7 +68,7 @@ new.0 <- read_csv(new.data,
          prov_status_change_date = year(prov_status_change_date))
 
 
-if (!file.exists("data/tax_key_vert.csv")) {
+if (!file.exists("data/tax_key_vert_full.csv")) {
 
   # create a key with all historic ELcode, names, scinema , Taxanomic
   full_key <- new.0 %>%
@@ -82,12 +82,10 @@ if (!file.exists("data/tax_key_vert.csv")) {
   sum(is.na(full_key$ELCODE))
 
   full_key$ELCODE[is.na(full_key$ELCODE)] <- lookup_elcodes(full_key$scientific_name[is.na(full_key$ELCODE)])
+#  x <- full_key
+#  full_key <- x
 
-  x <- full_key
-  full_key <- x
-
-  sum(is.na(full_key$ELCODE))
-
+#  sum(is.na(full_key$ELCODE))
 
   # remove the inverts keep the NA's
   full_key <- full_key %>%
@@ -117,10 +115,8 @@ if (!file.exists("data/tax_key_vert.csv")) {
   write_csv(latest_key, "data/tax_key_vert_latest_yr.csv")
 } else {
   key <- read_csv("data/tax_key_vert_full.csv")
-  latest_key <- read_csv("data/tax_key_vert_latest.csv")
+  latest_key <- read_csv("data/tax_key_vert_latest_yr.csv")
 }
-
-
 
 bc_key <- new.0 %>% select(year, scientific_name, ELCODE, bc_list, origin) %>%
   group_by(scientific_name) %>%
@@ -133,12 +129,7 @@ max_year_reviewed <- new.0 %>%
   summarise(latest_review = max(prov_status_review_date))
 
 
-## THis part needs to be fixed =
-
-
-
-goi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles", "NA")
-
+goi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles", "NA", "data_check_required" )
 
 new.1  <- new.0 %>%
   select(year, scientific_name, common_name, ELCODE,
@@ -154,7 +145,9 @@ new.1  <- new.0 %>%
            startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
            startsWith(ELCODE, "IIODO") ~ "Odonata",
            startsWith(ELCODE, "IMBIV") ~ "Molluscs",
+           is.na(ELCODE) ~ "data_check_required",
            TRUE ~ NA_character_)) %>%
+  filter(is.na(ELCODE)|!startsWith(ELCODE, "I")) %>%
   group_by(scientific_name) %>%
   fill(ELCODE, .direction = "up") %>%
   ungroup() %>%
@@ -162,6 +155,13 @@ new.1  <- new.0 %>%
   select(scientific_name, common_name, year, prov_status, ELCODE) %>%
   spread(year, prov_status) %>%
   distinct()
+
+
+sum(is.na(new.1$ELCODE))
+
+## notes years for old and new datasets
+#hist.data <- 1992 - 2008, 2012 (retro - ranked) # data catalogue
+#new.data <-  "2004"  - 2018
 
 # merge hist and new data sets:
 all <- full_join(new.1, hist.data,  by = "scientific_name") %>%
@@ -174,22 +174,62 @@ all <- full_join(new.1, hist.data,  by = "scientific_name") %>%
     startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
     startsWith(ELCODE, "IIODO") ~ "Odonata",
     startsWith(ELCODE, "IMBIV") ~ "Molluscs",
+    is.na(ELCODE) ~ "data_check_required",
     TRUE ~ NA_character_))
 
 
 # flag species which 2012 date does not match between data sets.
-all  <- all %>%
-  mutate(Update_2012_data = ifelse(`2012.y` ==`2012.x`, 0, 1))
-
-unmatched <- all %>%
-  filter(all$Update_2012_data == 1 ) %>%
-  select(scientific_name, common_name, ELCODE,`2012.x`, `2012.y`)
+# with the new
 
 all <- all %>%
-  select(taxonomic_group, scientific_name, common_name, ELCODE,"1992","1995", "1997",
-          "1998" , "2001","2002", "2003", "2005", "2006" ,"2007" , "2008" , "2010",
-         "2011", "2012.x" ,"2012.y", "2013" , "2014", "2015" , "2016", "2017" , "2018",
-         "Update_2012_data" )
+  select(taxonomic_group, scientific_name, common_name, ELCODE,
+         "1992", "1995","1997", "1998", "2001","2002" , "2003",
+         "2004", "2005.y", "2005.x",  "2006.x", "2006.y", "2007.x","2007.y"  ,
+         "2008.x", "2008.y",  "2009" , "2010" , "2011" , "2012.x", "2012.y" ,
+          "2013" ,"2014" , "2015" , "2016", "2017"  ,"2018")
+
+
+all  <- all %>%
+  mutate(Update_2012_data = ifelse(`2012.y` ==`2012.x`, 0, 1),
+         Update_2005_data = ifelse(`2005.y` ==`2005.x`, 0, 1),
+         Update_2006_data = ifelse(`2006.y` ==`2006.x`, 0, 1),
+         Update_2007_data = ifelse(`2007.y` ==`2007.x`, 0, 1),
+         Update_2008_data = ifelse(`2008.y` ==`2008.x`, 0, 1),
+         )
+
+
+unmatched <- all %>%
+  filter(all$Update_2012_data == 1 ) #%>%
+#  select(scientific_name, common_name, ELCODE,`2012.x`, `2012.y`)
+
+unmatched05 <- all %>%
+  filter(all$Update_2005_data == 1 )# %>%
+ # select(scientific_name, common_name, ELCODE,`2005.x`, `2005.y`)
+
+unmatched06 <- all %>%
+  filter(all$Update_2006_data == 1 ) #%>%
+#  select(scientific_name, common_name, ELCODE,`2006.x`, `2006.y`)
+
+unmatched07 <- all %>%
+  filter(all$Update_2007_data == 1 ) #%>%
+  #select(scientific_name, common_name, ELCODE,`2007.x`, `2007.y`)
+
+unmatched08 <- all %>%
+  filter(all$Update_2008_data == 1 ) #%>%
+#select(scientific_name, common_name, ELCODE,`2007.x`, `2007.y`)
+
+# join all species which have unmatched datasets
+
+temp <-bind_rows (unmatched, unmatched05, unmatched06, unmatched07,
+                  unmatched08 ) %>%
+  select(taxonomic_group, scientific_name, common_name, ELCODE,
+         "1992", "1995","1997", "1998", "2001","2002" , "2003",
+         "2004", "2005.y", "2005.x",  "2006.x", "2006.y", "2007.x","2007.y"  ,
+         "2008.x", "2008.y",  "2009" , "2010" , "2011" , "2012.x", "2012.y" ,
+         "2013" ,"2014" , "2015" , "2016", "2017"  ,"2018", everything())
+
+write.csv(temp, file.path("data","sp.check.temp.csv"))
+
 
 #write.csv(all, file.path("data", "consolidated_output.csv"), row.names = FALSE)
 
