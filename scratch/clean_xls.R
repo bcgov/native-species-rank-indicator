@@ -19,12 +19,13 @@ library(envreportutils)
 library(stringr)
 library(lubridate)
 library(readr)
+library(readxl)
 
 source("R/lookup_elcode.R")
 
 # read in data set already formatted (1992 - 2012)
 
-hist.data  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
+#hist.data  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
 
 hist.data <- hist.data %>%
   mutate(Scientific_Name = tolower(Scientific_Name)) %>%
@@ -35,7 +36,189 @@ hist.data <- hist.data %>%
 #write.csv(hist.data, file.path("data", "hist.data.csv"), row.names = FALSE)
 
 
-# read in the latest data catalogue from CDC (2012 - 2018) ------------------------------------------------------------
+# read in the rank change data sheet
+
+change.data <- file.path("data",
+                      "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.csv"
+)
+
+cdata <- read_csv(change.data,
+                  col_types = cols_only(
+                    ELCODE = col_character(),
+                    SCIENTIFIC_NAME = col_character(),
+                    ENGLISH_NAME = col_character(),
+                    CURRENT_SRANK = col_character(),
+                    BC_LIST = col_character(),
+                    RANK_REVIEW_DATE = col_date(),
+                    RANK_CHANGE_DATE = col_date(),
+                    CHANGE_ENTRY_DATE = col_date(),
+                    PREV_SRANK = col_character(),
+                    NEW_RANK = col_character(),
+                    CODE= col_number(),
+                    REASON_DESC = col_character(),
+                    COMMENTS = col_character()
+                  )
+) %>%
+
+  rename_all(function(x) tolower(gsub("\\s+", "_", x))) %>%
+  filter(!startsWith(elcode, "I")) %>%
+  filter(!grepl("^(Search|Sort|Open|Animals)", scientific_name),
+         !is.na(scientific_name)) %>%
+  filter(!bc_list == "Accidental") %>%
+  mutate(scientific_name = tolower(trimws(scientific_name, "both")),
+         review_year = year(rank_review_date),
+         change_year = year(rank_change_date),
+         taxonomic_group = case_when(
+           startsWith(elcode, "AA")  ~ "Amphibians",
+           startsWith(elcode, "AB")  ~ "Breeding Birds",
+           startsWith(elcode, "AF")  ~ "Freshwater Fish",
+           startsWith(elcode, "AM")  ~ "Mammals",
+           startsWith(elcode, "AR")  ~ "Reptiles and Turtles",
+           TRUE ~ NA_character_)) %>%
+  filter(change_year > 2012)
+
+#660 lines
+
+
+# determine the timing of reviews per taxanomic group
+
+review_tax <- cdata %>%
+  group_by(taxonomic_group, review_year, change_year) %>%
+  summarise(count = n()) %>%
+  filter(count == max(count))
+
+review_tax
+
+# Calculate how many change points per species
+cd  <- cdata %>%
+  group_by(scientific_name) %>%
+  summarise(count = n())
+
+# 270 species
+cd %>% group_by(count) %>%
+  summarise(n = n())
+
+# A tibble: 5 x 2
+#       count     n
+#<int> <int>
+#  1     1    32
+#  2     2   152
+#  3     3    85
+#  4     4    16
+#  5     5     1
+
+# get list of single changed species
+
+single.change <- cd %>%
+  filter(count == 1) %>%
+  select(scientific_name) %>%
+  pull()
+
+length(single.change) #32
+
+single.change.data <- cdata %>%
+  filter(scientific_name %in% single.change) %>%
+  select(scientific_name, review_year, change_year, current_srank)
+
+change <- single.change.data  %>%
+  spread(review_year, current_srank) %>%
+  select(-change_year)
+
+review <- single.change.data  %>%
+  spread(change_year, current_srank) %>% select(-review_year)
+
+
+# calcaulte the rank change years by the
+single.wide <- left_join(review, change) %>%
+  mutate(earliest_rank = paste0(`2013`, `2015`)) %?%
+
+### Still to do : merge into a single column (ignore NA )
+
+
+# get list of two changes
+double.change <- cd %>%
+  filter(count == 2) %>%
+  select(scientific_name) %>%
+  pull()
+
+length(double.change) #152
+
+double.change.data <- cdata %>%
+  filter(scientific_name %in% double.change) %>%
+  select(scientific_name, review_year, change_year, change_entry_date, current_srank, prev_srank, new_rank) %>%
+  filter(!is.na(change_entry_date)) %>%
+  distinct()
+
+
+
+
+
+
+single.change <- cd %>%
+  filter(count == 1) %>%
+  select(scientific_name) %>%
+  pull()
+
+length(single.change) #32
+
+single.change.data <- cdata %>%
+  filter(scientific_name %in% single.change) %>%
+  select(scientific_name, review_year, change_year, current_srank)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  mutate(scientific_name = tolower(scientific_name),
+         taxonomic_group = case_when(
+           startsWith(ELCODE, "AA")  ~ "Amphibians",
+           startsWith(ELCODE, "AB")  ~ "Breeding Birds",
+           startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
+           startsWith(ELCODE, "AM")  ~ "Mammals",
+           startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
+           startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
+           startsWith(ELCODE, "IIODO") ~ "Odonata",
+           startsWith(ELCODE, "IMBIV") ~ "Molluscs",
+           is.na(ELCODE) ~ "data_check_required",
+           TRUE ~ NA_character_)) %>%
+  filter(is.na(ELCODE)|!startsWith(ELCODE, "I")) %>%
+  group_by(scientific_name) %>%
+  fill(ELCODE, .direction = "up") %>%
+  ungroup() %>%
+  filter(str_detect(taxonomic_group, paste(goi,collapse = "|"))) %>%
+  select(scientific_name, common_name, year, prov_status, ELCODE) %>%
+  spread(year, prov_status) %>%
+  distinct()
+
+
+# select the 2012 historic data set to compare latest data changes
+
+head(hist.data)
+
+hist2012 <- hist.data %>%
+  select("taxonomic_group","scientific_name", "2012")
+
+length(hist2012$taxonomic_group)
+
+
+sort(unique(cdata$elcode), decreasing = TRUE)
+
+
+
+
+
+
+#latest data catalogue from CDC (2012 - 2018) ------------------------------------------------------------
+
 
 new.data <- file.path(("data"),
                        "BCSEE_Plants_Animals_final.csv"
@@ -188,7 +371,6 @@ all <- all %>%
          "2008.x", "2008.y",  "2009" , "2010" , "2011" , "2012.x", "2012.y" ,
           "2013" ,"2014" , "2015" , "2016", "2017"  ,"2018")
 
-
 all  <- all %>%
   mutate(Update_2012_data = ifelse(`2012.y` ==`2012.x`, 0, 1),
          Update_2005_data = ifelse(`2005.y` ==`2005.x`, 0, 1),
@@ -196,7 +378,6 @@ all  <- all %>%
          Update_2007_data = ifelse(`2007.y` ==`2007.x`, 0, 1),
          Update_2008_data = ifelse(`2008.y` ==`2008.x`, 0, 1),
          )
-
 
 unmatched <- all %>%
   filter(all$Update_2012_data == 1 ) #%>%
