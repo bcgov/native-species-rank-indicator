@@ -79,6 +79,35 @@ cdata <- read_csv(change.data,
 
 #660 lines
 
+# create a list of unique species codes
+
+elcode_list <- as.list(unique(cdata$elcode))
+
+
+out <- lapply(cdlist, function(x) {
+  no.rows <- cdata %>%
+    filter(scientific_name)
+
+
+
+
+}
+
+out <- lapply(bgc.ls, function(x) {
+  no.pts <- prop.sites %>%
+    filter(MAP_LABEL == x) %>%
+    select(perc) %>%
+    pull
+  sdata <- bec_pts  %>%  filter(MAP_LABEL == x)
+  sample_n(sdata, no.pts)
+})
+
+out <- do.call("rbind", out)
+
+
+
+
+
 
 # determine the timing of reviews per taxanomic group
 
@@ -91,7 +120,6 @@ change_tax <- cdata %>%
   group_by(taxonomic_group, change_year) %>%
   summarise(count = n()) #%>%
  # filter(count == max(count))
-
 
 review_tax
 change_tax
@@ -126,25 +154,6 @@ cdlist <- as.list(cd)
 
 
 
-out <- lapply(cdlist, function(x) {
-  no.rows <- cdata %>%
-    filter(scientific_name)
-
-
-
-
-  }
-
-out <- lapply(bgc.ls, function(x) {
-  no.pts <- prop.sites %>%
-    filter(MAP_LABEL == x) %>%
-    select(perc) %>%
-    pull
-  sdata <- bec_pts  %>%  filter(MAP_LABEL == x)
-  sample_n(sdata, no.pts)
-})
-
-out <- do.call("rbind", out)
 
 
 
