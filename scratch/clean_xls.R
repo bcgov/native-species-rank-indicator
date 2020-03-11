@@ -25,7 +25,7 @@ source("R/lookup_elcode.R")
 
 # read in data set already formatted (1992 - 2012)
 
-#hist.data  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
+hist.data  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
 
 hist.data <- hist.data %>%
   mutate(Scientific_Name = tolower(Scientific_Name)) %>%
@@ -83,11 +83,25 @@ cdata <- read_csv(change.data,
 # determine the timing of reviews per taxanomic group
 
 review_tax <- cdata %>%
-  group_by(taxonomic_group, review_year, change_year) %>%
-  summarise(count = n()) %>%
-  filter(count == max(count))
+  group_by(taxonomic_group, review_year) %>%
+  summarise(count = n()) #%>%
+  #filter(count == max(count))
+
+change_tax <- cdata %>%
+  group_by(taxonomic_group, change_year) %>%
+  summarise(count = n()) #%>%
+ # filter(count == max(count))
+
 
 review_tax
+change_tax
+
+# years when reviewed
+# Amphibians (2016)
+# reptiles and Turtles (2018)
+# Breeding birds (2015)
+
+
 
 # Calculate how many change points per species
 cd  <- cdata %>%
@@ -101,13 +115,38 @@ cd %>% group_by(count) %>%
 # A tibble: 5 x 2
 #       count     n
 #<int> <int>
-#  1     1    32
+#  1     1    32  # 32 species have 1 time point change
 #  2     2   152
 #  3     3    85
 #  4     4    16
 #  5     5     1
 
-# get list of single changed species
+
+cdlist <- as.list(cd)
+
+
+
+out <- lapply(cdlist, function(x) {
+  no.rows <- cdata %>%
+    filter(scientific_name)
+
+
+
+
+  }
+
+out <- lapply(bgc.ls, function(x) {
+  no.pts <- prop.sites %>%
+    filter(MAP_LABEL == x) %>%
+    select(perc) %>%
+    pull
+  sdata <- bec_pts  %>%  filter(MAP_LABEL == x)
+  sample_n(sdata, no.pts)
+})
+
+out <- do.call("rbind", out)
+
+
 
 single.change <- cd %>%
   filter(count == 1) %>%
