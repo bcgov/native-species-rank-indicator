@@ -86,12 +86,16 @@ elcode_list <- as.list(unique(cdata$elcode))
 
 out <- lapply(cdlist, function(x) {
 
-  x <-  elcode_list[[1]]
+  x <-  elcode_list[[3]]
+
 
    sp.rows <- cdata %>%
     filter(elcode == x)
 
-   if(length(no.rows$elcode) == 1){
+#   out <- sp.rows %>%
+#     select(elcode, scientific_name,
+
+   if(length(sp.rows$elcode) == 1){
 
      print ("one row")
 
@@ -99,7 +103,20 @@ out <- lapply(cdlist, function(x) {
 
      print("more than one row")
 
-     sp.edit <- sp.rows %>%
+     out <- sp.rows %>%
+       select(elcode, scientific_name,
+              #taxonomic_group, current_srank,  rank_change_date,
+               new_rank,rank_review_date,
+              code, reason_desc, comments, review_year, change_year)
+
+
+     real.changes <- out %>%
+       filter(code %in% c(1,2)) %>%
+       select(elcode, scientific_name, new_rank, change_year, code, comment)
+
+
+     spread()
+
        #filter(!is.na(change_entry_date))
        mutate()
 
@@ -108,12 +125,18 @@ out <- lapply(cdlist, function(x) {
 
 
 
+
+  elcode,   scientific_name    taxonomic_group,
+
+   }
+
+
+
 }
 
-library(bcmaps)
+out <- do.call("rbind", out)
 
-nr <- nr_regions()
-
+# add taxanomic
 
 
 
@@ -123,6 +146,10 @@ nr <- nr_regions()
 
 
 }
+
+
+
+elcode_list <- as.list(unique(cdata$elcode))
 
 out <- lapply(bgc.ls, function(x) {
   no.pts <- prop.sites %>%
