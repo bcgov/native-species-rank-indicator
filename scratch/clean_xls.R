@@ -85,8 +85,39 @@ elcode_list <- as.list(unique(cdata$elcode))
 
 
 out <- lapply(cdlist, function(x) {
-  no.rows <- cdata %>%
-    filter(scientific_name)
+
+  x <-  elcode_list[[1]]
+
+   sp.rows <- cdata %>%
+    filter(elcode == x)
+
+   if(length(no.rows$elcode) == 1){
+
+     print ("one row")
+
+   } else {
+
+     print("more than one row")
+
+     sp.edit <- sp.rows %>%
+       #filter(!is.na(change_entry_date))
+       mutate()
+
+
+   }
+
+
+
+}
+
+library(bcmaps)
+
+nr <- nr_regions()
+
+
+
+
+    elcode_list[[1]]
 
 
 
