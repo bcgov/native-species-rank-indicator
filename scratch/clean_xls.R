@@ -85,11 +85,10 @@ elcode_list <- as.list(unique(cdata$elcode))
 
 out <- lapply(cdlist, function(x) {
 
-  x <-  elcode_list[[3]]
+  x <-  elcode_list[[1]]
 
    sp.rows <- cdata %>%
     filter(elcode == x)
-
 
    if(length(sp.rows$elcode) == 1){
 
@@ -100,22 +99,17 @@ out <- lapply(cdlist, function(x) {
      print("more than one row")
 
      out <- sp.rows %>%
-       select(elcode, scientific_name,
-              taxonomic_group, current_srank,  rank_change_date,
-               new_rank,rank_review_date,#current_srank,
-              code, reason_desc, comments, review_year, change_year)
+       select(elcode, scientific_name, current_srank,
+              #taxonomic_group, current_srank,  rank_change_date,
+              new_rank,
+              #new_rank,rank_review_date,#current_srank,
+              code, reason_desc, comments,
+              review_year, change_year) %>%
+       filter(change_year > 2012)
 
-     review_dates <- unique(out$rank_review_date)
-     change_dates <- unique(out$rank_change_date)
-     # if review date does not equal change date
-
-
-     sp | yr | rank | reason
-
-     # if rank == current rank?
-     # if reason = 1 or 2 code (real change )
-
-
+  # need to capture review yrs
+  # capture change years  # if reason = 1 or 2 code (real change )
+  # format =  sp | yr | rank | reason  or spread version of this
 
      real.changes <- out %>%
        filter(code %in% c(1,2)) %>%
@@ -130,25 +124,29 @@ out <- lapply(cdlist, function(x) {
        filter(!is.na(new_rank)) %>%
        spread(review_year, new_rank)
 
-    # join real changes and not real changes together
+     ## this is an NA
 
+     #  capture review yrs
+     review.changes <- out %>%
+       select(elcode, scientific_name, current_srank, review_year) %>%
+       distinct() %>%
+       spread(review_year, current_srank )
 
+    # write out the data
 
+     dout <- review.changes %>%
+       left_join(real.changes)
 
+    # test join to hist table
 
+     #
 
-       #filter(!is.na(change_entry_date))
-       mutate()
+# problems with where multiple changes in single year
+# problems with accurately gauging review dates (as this sheet only contains data which
+#     was changed - ie not capture all data )
 
 
    }
-
-
-
-  elcode,   scientific_name    taxonomic_group,
-
-   }
-
 
 
 }
