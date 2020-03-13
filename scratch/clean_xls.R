@@ -67,6 +67,7 @@ cdata <- read_csv(change.data,
   mutate(scientific_name = tolower(trimws(scientific_name, "both")),
          review_year = year(rank_review_date),
          change_year = year(rank_change_date),
+         change_entry_yr = year(change_entry_date),
          taxonomic_group = case_when(
            startsWith(elcode, "AA")  ~ "Amphibians",
            startsWith(elcode, "AB")  ~ "Breeding Birds",
@@ -85,76 +86,45 @@ elcode_list <- as.list(unique(cdata$elcode))
 
 out <- lapply(cdlist, function(x) {
 
-  x <-  elcode_list[[1]]
+  x <-  elcode_list[[2]]
 
-   sp.rows <- cdata %>%
+  sp.rows <- cdata %>%
     filter(elcode == x)
 
-   if(length(sp.rows$elcode) == 1){
+  if(length(sp.rows$elcode) == 1){
 
-     print ("one row of data")
+    print ("one row of data")
 
-   } else {
+  } else {
 
-     print("more than one row")
+    print("more than one row")
 
-     out <- sp.rows %>%
-       select(elcode, scientific_name, current_srank,
-              #taxonomic_group, current_srank,  rank_change_date,
-              new_rank,
-              #new_rank,rank_review_date,#current_srank,
-              code, reason_desc, comments,
-              review_year, change_year) %>%
-       filter(change_year > 2012)
+    out <- sp.rows %>%
+      select(elcode, scientific_name, current_srank,
+             taxonomic_group, current_srank,
+             new_rank, change_year,change_entry_yr,
+             code, reason_desc, comments) %>%
+      filter(change_entry_yr > 2012) %>%
+      distinct()
 
-  # need to capture review yrs
-  # capture change years  # if reason = 1 or 2 code (real change )
-  # format =  sp | yr | rank | reason  or spread version of this
+    if nrow(out)>1 | unique(out${
+      out <- out %>%
+        filter(new_rank == current_srank)
+    }
 
-     real.changes <- out %>%
-       filter(code %in% c(1,2)) %>%
-       select(elcode, scientific_name, new_rank, change_year, code, comments) %>%
-       spread(change_year, new_rank )
+    changes <- out %>%
+      # filter(code %in% c(1,2)) %>%
+      select(elcode, scientific_name, current_srank, new_rank, change_entry_yr, code, comments)
 
-     `%not_in%` <- purrr::negate(`%in%`)
-
-     not.real.changes <- out %>%
-       filter(code %not_in% c(1,2)) %>%
-       select(elcode, scientific_name, new_rank, change_year, review_year, code, comments) %>%
-       filter(!is.na(new_rank)) %>%
-       spread(review_year, new_rank)
-
-     ## this is an NA
-
-     #  capture review yrs
-     review.changes <- out %>%
-       select(elcode, scientific_name, current_srank, review_year) %>%
-       distinct() %>%
-       spread(review_year, current_srank )
-
-    # write out the data
-
-     dout <- review.changes %>%
-       left_join(real.changes)
-
-    # test join to hist table
-
-     #
-
-# problems with where multiple changes in single year
-# problems with accurately gauging review dates (as this sheet only contains data which
-#     was changed - ie not capture all data )
-
-
-   }
-
+  }
 
 }
 
 out <- do.call("rbind", out)
 
 # add taxanomic
-
+%>%
+  spread(change_entry_yr, new_rank )
 
 
     elcode_list[[1]]
