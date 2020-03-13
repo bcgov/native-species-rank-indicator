@@ -35,7 +35,6 @@ hist.data <- hist.data %>%
 
 #write.csv(hist.data, file.path("data", "hist.data.csv"), row.names = FALSE)
 
-
 # read in the rank change data sheet
 
 change.data <- file.path("data",
@@ -88,16 +87,13 @@ out <- lapply(cdlist, function(x) {
 
   x <-  elcode_list[[3]]
 
-
    sp.rows <- cdata %>%
     filter(elcode == x)
 
-#   out <- sp.rows %>%
-#     select(elcode, scientific_name,
 
    if(length(sp.rows$elcode) == 1){
 
-     print ("one row")
+     print ("one row of data")
 
    } else {
 
@@ -105,24 +101,47 @@ out <- lapply(cdlist, function(x) {
 
      out <- sp.rows %>%
        select(elcode, scientific_name,
-              #taxonomic_group, current_srank,  rank_change_date,
-               new_rank,rank_review_date,
+              taxonomic_group, current_srank,  rank_change_date,
+               new_rank,rank_review_date,#current_srank,
               code, reason_desc, comments, review_year, change_year)
+
+     review_dates <- unique(out$rank_review_date)
+     change_dates <- unique(out$rank_change_date)
+     # if review date does not equal change date
+
+
+     sp | yr | rank | reason
+
+     # if rank == current rank?
+     # if reason = 1 or 2 code (real change )
+
 
 
      real.changes <- out %>%
        filter(code %in% c(1,2)) %>%
-       select(elcode, scientific_name, new_rank, change_year, code, comment)
+       select(elcode, scientific_name, new_rank, change_year, code, comments) %>%
+       spread(change_year, new_rank )
+
+     `%not_in%` <- purrr::negate(`%in%`)
+
+     not.real.changes <- out %>%
+       filter(code %not_in% c(1,2)) %>%
+       select(elcode, scientific_name, new_rank, change_year, review_year, code, comments) %>%
+       filter(!is.na(new_rank)) %>%
+       spread(review_year, new_rank)
+
+    # join real changes and not real changes together
 
 
-     spread()
+
+
+
 
        #filter(!is.na(change_entry_date))
        mutate()
 
 
    }
-
 
 
 
