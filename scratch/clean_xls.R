@@ -86,10 +86,18 @@ elcode_list <- as.list(unique(cdata$elcode))
 
 out <- lapply(elcode_list, function(x) {
 
- # x <-  elcode_list[[1]]
+#  x <-  elcode_list[[258]]  # 249, # 227
 
   sp.rows <- cdata %>%
     filter(elcode == x)
+
+  if(any(is.na(sp.rows$change_entry_date))) {
+
+   sp.rows <- sp.rows %>%
+     mutate(change_entry_yr = ifelse(
+       is.na(change_entry_yr), change_year, change_entry_yr),
+       new_rank = ifelse(is.na(new_rank), current_srank, new_rank))
+  }
 
   sp.data <- sp.rows %>%
     select(elcode, scientific_name, current_srank,
@@ -99,19 +107,18 @@ out <- lapply(elcode_list, function(x) {
     filter(change_entry_yr > 2012) %>%
     distinct()
 
-  #  if nrow(out)>1 | unique(out${
-  #    out <- out %>%
-  #      filter(new_rank == current_srank)
-  #  }
+  sp.data <- sp.data  %>%
+    select(elcode, scientific_name, current_srank, new_rank,
+           change_entry_yr, code, comments)
 
-  sp.data %>%
-      # filter(code %in% c(1,2)) %>%
-      select(elcode, scientific_name, current_srank, new_rank,
-             change_entry_yr, code, comments)
+  if(nrow(sp.data)>1){
 
-   # sp.data %>%
-  #  spread(change_entry_yr, new_rank) %>%
-  #  select(-current_srank)
+   sp.data %>% filter(!is.na(code))
+
+  } else {
+
+    sp.data
+  }
 
 })
 
@@ -123,142 +130,12 @@ out.wide <- out %>%
   select(-current_srank)
 
 
-# could do a group by ??
+# merge with the historic dataset and check for mismatch on 2012 dates
 
-
-
-
-
-
-elcode_list <- as.list(unique(cdata$elcode))
-
-out <- lapply(bgc.ls, function(x) {
-  no.pts <- prop.sites %>%
-    filter(MAP_LABEL == x) %>%
-    select(perc) %>%
-    pull
-  sdata <- bec_pts  %>%  filter(MAP_LABEL == x)
-  sample_n(sdata, no.pts)
-})
-
-out <- do.call("rbind", out)
-
-
-
-
-
-
-# determine the timing of reviews per taxanomic group
-
-review_tax <- cdata %>%
-  group_by(taxonomic_group, review_year) %>%
-  summarise(count = n()) #%>%
-  #filter(count == max(count))
-
-change_tax <- cdata %>%
-  group_by(taxonomic_group, change_year) %>%
-  summarise(count = n()) #%>%
- # filter(count == max(count))
-
-review_tax
-change_tax
-
-# years when reviewed
-# Amphibians (2016)
-# reptiles and Turtles (2018)
-# Breeding birds (2015)
-
-
-
-# Calculate how many change points per species
-cd  <- cdata %>%
-  group_by(scientific_name) %>%
-  summarise(count = n())
-
-# 270 species
-cd %>% group_by(count) %>%
-  summarise(n = n())
-
-# A tibble: 5 x 2
-#       count     n
-#<int> <int>
-#  1     1    32  # 32 species have 1 time point change
-#  2     2   152
-#  3     3    85
-#  4     4    16
-#  5     5     1
-
-
-cdlist <- as.list(cd)
-
-
-
-
-
-
-single.change <- cd %>%
-  filter(count == 1) %>%
-  select(scientific_name) %>%
-  pull()
-
-length(single.change) #32
-
-single.change.data <- cdata %>%
-  filter(scientific_name %in% single.change) %>%
-  select(scientific_name, review_year, change_year, current_srank)
-
-change <- single.change.data  %>%
-  spread(review_year, current_srank) %>%
-  select(-change_year)
-
-review <- single.change.data  %>%
-  spread(change_year, current_srank) %>% select(-review_year)
-
-
-# calcaulte the rank change years by the
-single.wide <- left_join(review, change) %>%
-  mutate(earliest_rank = paste0(`2013`, `2015`)) %?%
-
-### Still to do : merge into a single column (ignore NA )
-
-
-# get list of two changes
-double.change <- cd %>%
-  filter(count == 2) %>%
-  select(scientific_name) %>%
-  pull()
-
-length(double.change) #152
-
-double.change.data <- cdata %>%
-  filter(scientific_name %in% double.change) %>%
-  select(scientific_name, review_year, change_year, change_entry_date, current_srank, prev_srank, new_rank) %>%
-  filter(!is.na(change_entry_date)) %>%
-  distinct()
-
-
-
-
-
-
-single.change <- cd %>%
-  filter(count == 1) %>%
-  select(scientific_name) %>%
-  pull()
-
-length(single.change) #32
-
-single.change.data <- cdata %>%
-  filter(scientific_name %in% single.change) %>%
-  select(scientific_name, review_year, change_year, current_srank)
-
-
-
-
-
-
-
-
+out <- hist.data %>%
+  left_join(out.wide) %>%
+  select(taxonomic_group, scientific_name, elcode, code,
+         comments, everything())
 
 
 
