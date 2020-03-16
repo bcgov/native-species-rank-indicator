@@ -86,17 +86,17 @@ elcode_list <- as.list(unique(cdata$elcode))
 
 out <- lapply(elcode_list, function(x) {
 
-#  x <-  elcode_list[[258]]  # 249, # 227
+  #  x <-  elcode_list[[258]]  # 249, # 227
 
   sp.rows <- cdata %>%
     filter(elcode == x)
 
   if(any(is.na(sp.rows$change_entry_date))) {
 
-   sp.rows <- sp.rows %>%
-     mutate(change_entry_yr = ifelse(
-       is.na(change_entry_yr), change_year, change_entry_yr),
-       new_rank = ifelse(is.na(new_rank), current_srank, new_rank))
+    sp.rows <- sp.rows %>%
+      mutate(change_entry_yr = ifelse(
+        is.na(change_entry_yr), change_year, change_entry_yr),
+        new_rank = ifelse(is.na(new_rank), current_srank, new_rank))
   }
 
   sp.data <- sp.rows %>%
@@ -113,7 +113,7 @@ out <- lapply(elcode_list, function(x) {
 
   if(nrow(sp.data)>1){
 
-   sp.data %>% filter(!is.na(code))
+    sp.data %>% filter(!is.na(code))
 
   } else {
 
@@ -131,6 +131,7 @@ out.wide <- out %>%
 
 
 # merge with the historic dataset and check for mismatch on 2012 dates
+# Note this needs reworking as the
 
 out <- hist.data %>%
   left_join(out.wide) %>%
@@ -145,7 +146,7 @@ out <- out %>%
 
 
 
-check the pre 2012 and post 2012
+#check the pre 2012 and post 2012
 
 # maybe still need to add the full list of species (?) ie the big table
 
