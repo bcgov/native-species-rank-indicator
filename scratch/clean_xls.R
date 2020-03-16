@@ -135,8 +135,13 @@ out.wide <- out %>%
 out <- hist.data %>%
   left_join(out.wide) %>%
   select(taxonomic_group, scientific_name, elcode, code,
-         comments, everything()) %>%
-  mutate(pre_2012 = ifelse())
+         comments, everything())
+
+#out.temp <- write.csv(out, file.path("data","sp.check.temp.csv"))
+
+out <- out %>%
+  mutate(pre_2012 = ifelse(is.na(`2012`), `2008`,`2012`),
+         pre_2012 = ifelse(is.na(pre_2012), `2007`, pre_2012))
 
 
 
@@ -152,40 +157,7 @@ check the pre 2012 and post 2012
 
 
 
-
-  mutate(scientific_name = tolower(scientific_name),
-         taxonomic_group = case_when(
-           startsWith(ELCODE, "AA")  ~ "Amphibians",
-           startsWith(ELCODE, "AB")  ~ "Breeding Birds",
-           startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
-           startsWith(ELCODE, "AM")  ~ "Mammals",
-           startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
-           startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
-           startsWith(ELCODE, "IIODO") ~ "Odonata",
-           startsWith(ELCODE, "IMBIV") ~ "Molluscs",
-           is.na(ELCODE) ~ "data_check_required",
-           TRUE ~ NA_character_)) %>%
-  filter(is.na(ELCODE)|!startsWith(ELCODE, "I")) %>%
-  group_by(scientific_name) %>%
-  fill(ELCODE, .direction = "up") %>%
-  ungroup() %>%
-  filter(str_detect(taxonomic_group, paste(goi,collapse = "|"))) %>%
-  select(scientific_name, common_name, year, prov_status, ELCODE) %>%
-  spread(year, prov_status) %>%
-  distinct()
-
-
 # select the 2012 historic data set to compare latest data changes
-
-head(hist.data)
-
-hist2012 <- hist.data %>%
-  select("taxonomic_group","scientific_name", "2012")
-
-length(hist2012$taxonomic_group)
-
-
-sort(unique(cdata$elcode), decreasing = TRUE)
 
 
 
@@ -193,7 +165,6 @@ sort(unique(cdata$elcode), decreasing = TRUE)
 
 
 #latest data catalogue from CDC (2012 - 2018) ------------------------------------------------------------
-
 
 new.data <- file.path(("data"),
                        "BCSEE_Plants_Animals_final.csv"
@@ -264,17 +235,23 @@ if (!file.exists("data/tax_key_vert_full.csv")) {
     distinct() %>%
     mutate(scientific_name = tolower(scientific_name))
 
-  # Create a key with just one row for each ELCODE to use for authoritative names
-  latest_key <- group_by(full_key, ELCODE, taxonomic_group) %>%
-    filter(year == max(year)) %>%
-    select(-year)
-
   write_csv(key, "data/tax_key_vert_full.csv")
-  write_csv(latest_key, "data/tax_key_vert_latest_yr.csv")
+
 } else {
+
   key <- read_csv("data/tax_key_vert_full.csv")
-  latest_key <- read_csv("data/tax_key_vert_latest_yr.csv")
+
 }
+
+
+
+# merge the species
+
+
+
+
+
+
 
 bc_key <- new.0 %>% select(year, scientific_name, ELCODE, bc_list, origin) %>%
   group_by(scientific_name) %>%
