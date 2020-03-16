@@ -84,55 +84,49 @@ cdata <- read_csv(change.data,
 elcode_list <- as.list(unique(cdata$elcode))
 
 
-out <- lapply(cdlist, function(x) {
+out <- lapply(elcode_list, function(x) {
 
-  x <-  elcode_list[[2]]
+ # x <-  elcode_list[[1]]
 
   sp.rows <- cdata %>%
     filter(elcode == x)
 
-  if(length(sp.rows$elcode) == 1){
+  sp.data <- sp.rows %>%
+    select(elcode, scientific_name, current_srank,
+           taxonomic_group, current_srank,
+           new_rank, change_year,change_entry_yr,
+           code, reason_desc, comments) %>%
+    filter(change_entry_yr > 2012) %>%
+    distinct()
 
-    print ("one row of data")
+  #  if nrow(out)>1 | unique(out${
+  #    out <- out %>%
+  #      filter(new_rank == current_srank)
+  #  }
 
-  } else {
-
-    print("more than one row")
-
-    out <- sp.rows %>%
-      select(elcode, scientific_name, current_srank,
-             taxonomic_group, current_srank,
-             new_rank, change_year,change_entry_yr,
-             code, reason_desc, comments) %>%
-      filter(change_entry_yr > 2012) %>%
-      distinct()
-
-    if nrow(out)>1 | unique(out${
-      out <- out %>%
-        filter(new_rank == current_srank)
-    }
-
-    changes <- out %>%
+  sp.data %>%
       # filter(code %in% c(1,2)) %>%
-      select(elcode, scientific_name, current_srank, new_rank, change_entry_yr, code, comments)
+      select(elcode, scientific_name, current_srank, new_rank,
+             change_entry_yr, code, comments)
 
-  }
+   # sp.data %>%
+  #  spread(change_entry_yr, new_rank) %>%
+  #  select(-current_srank)
 
-}
+})
+
 
 out <- do.call("rbind", out)
 
-# add taxanomic
-%>%
-  spread(change_entry_yr, new_rank )
+out.wide <- out %>%
+  spread(change_entry_yr, new_rank) %>%
+  select(-current_srank)
 
 
-    elcode_list[[1]]
+# could do a group by ??
 
 
 
-
-}
 
 
 
