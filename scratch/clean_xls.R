@@ -135,7 +135,18 @@ out.wide <- out %>%
 out <- hist.data %>%
   left_join(out.wide) %>%
   select(taxonomic_group, scientific_name, elcode, code,
-         comments, everything())
+         comments, everything()) %>%
+  mutate(pre_2012 = ifelse())
+
+
+
+check the pre 2012 and post 2012
+
+# maybe still need to add the full list of species (?) ie the big table
+
+
+
+
 
 
 
