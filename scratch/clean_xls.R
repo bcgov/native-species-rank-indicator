@@ -23,7 +23,7 @@ library(readxl)
 
 source("R/lookup_elcode.R")
 
-# read in data set already formatted (1992 - 2012)
+# Data set 1: read in data set already formatted (1992 - 2012)
 
 hist.data  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
 
@@ -35,7 +35,8 @@ hist.data <- hist.data %>%
 
 #write.csv(hist.data, file.path("data", "hist.data.csv"), row.names = FALSE)
 
-# read in the rank change data sheet
+
+# Data set 2: read in the rank change data sheet
 
 change.data <- file.path("data",
                       "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.csv"
@@ -86,7 +87,7 @@ elcode_list <- as.list(unique(cdata$elcode))
 
 out <- lapply(elcode_list, function(x) {
 
- #   x <-  elcode_list[[260]]  # 249, # 227
+  #  x <-  elcode_list[[1]]  # 249, # 227
 
   sp.rows <- cdata %>%
     filter(elcode == x)
@@ -115,42 +116,35 @@ out <- lapply(elcode_list, function(x) {
       group_by(elcode, scientific_name, current_srank,  new_rank,  change_entry_yr) %>%
       filter(!is.na(code)) %>%
       top_n(., 1) %>%
-      ungroup() %>%
-      mutate(multiples = TRUE)
+      ungroup() #%>%
+     # mutate(multiples = TRUE)
 
 
   } else {
 
-    sp.data %>%
-      mutate(multiples = FALSE)
+    sp.data #%>%
+    # mutate(multiples = FALSE)
   }
 
 })
 
-
 out <- do.call("rbind", out)
 
-write.csv(out, file.path("data","sp.check.temp.csv"))
+#write.csv(out, file.path("data","sp.check.temp.csv"))
 
 
 out.wide <- out %>%
   spread(change_entry_yr, new_rank) %>%
   select(-current_srank)
 
+#write.csv(out.wide, file.path("data","sp.check.temp.wide.csv"))
 
 # merge with the historic dataset and check for mismatch on 2012 dates
-# Note this needs reworking as the
 
 out <- hist.data %>%
   left_join(out.wide) %>%
   select(taxonomic_group, scientific_name, elcode, code,
          comments, everything())
-
-#out.temp <- write.csv(out, file.path("data","sp.check.temp.csv"))
-
-out <- out %>%
-  mutate(pre_2012 = ifelse(is.na(`2012`), `2008`,`2012`),
-         pre_2012 = ifelse(is.na(pre_2012), `2007`, pre_2012))
 
 
 
@@ -158,22 +152,12 @@ out <- out %>%
 
 # maybe still need to add the full list of species (?) ie the big table
 
-
-
-
-
-
-
-
-
 # select the 2012 historic data set to compare latest data changes
 
 
 
 
-
-
-#latest data catalogue from CDC (2012 - 2018) ------------------------------------------------------------
+# # Data set 3: latest data catalogue from CDC (2012 - 2018) ------------------------------------------------------------
 
 new.data <- file.path(("data"),
                        "BCSEE_Plants_Animals_final.csv"
@@ -205,7 +189,6 @@ new.0 <- read_csv(new.data,
          prov_status_review_date = year(prov_status_review_date),
          prov_status_change_date = year(prov_status_change_date))
 
-
 if (!file.exists("data/tax_key_vert_full.csv")) {
 
   # create a key with all historic ELcode, names, scinema , Taxanomic
@@ -220,8 +203,6 @@ if (!file.exists("data/tax_key_vert_full.csv")) {
   sum(is.na(full_key$ELCODE))
 
   full_key$ELCODE[is.na(full_key$ELCODE)] <- lookup_elcodes(full_key$scientific_name[is.na(full_key$ELCODE)])
-#  x <- full_key
-#  full_key <- x
 
 #  sum(is.na(full_key$ELCODE))
 
@@ -254,15 +235,25 @@ if (!file.exists("data/tax_key_vert_full.csv")) {
 
 
 
+out
+
+
+
 # merge the species
 
 
 
+reviews <- new.0 %>%
+  select(year, scientific_name, ELCODE, bc_list,
+                            origin,  prov_status_review_date,
+                            prov_status_change_date) %>%
+  filter(year > 2012) %>%
+  select(- year) %>%
+  distinct() %>%
+  filter(prov_status_review_date > 2012)
 
 
 
-
-bc_key <- new.0 %>% select(year, scientific_name, ELCODE, bc_list, origin) %>%
   group_by(scientific_name) %>%
   filter(year == max(year)) %>%
   select(-year)
