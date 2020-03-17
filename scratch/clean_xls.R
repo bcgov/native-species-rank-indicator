@@ -86,7 +86,7 @@ elcode_list <- as.list(unique(cdata$elcode))
 
 out <- lapply(elcode_list, function(x) {
 
-  #  x <-  elcode_list[[258]]  # 249, # 227
+ #   x <-  elcode_list[[260]]  # 249, # 227
 
   sp.rows <- cdata %>%
     filter(elcode == x)
@@ -105,25 +105,33 @@ out <- lapply(elcode_list, function(x) {
            new_rank, change_year,change_entry_yr,
            code, reason_desc, comments) %>%
     filter(change_entry_yr > 2012) %>%
-    distinct()
-
-  sp.data <- sp.data  %>%
+    distinct() %>%
     select(elcode, scientific_name, current_srank, new_rank,
            change_entry_yr, code, comments)
 
   if(nrow(sp.data)>1){
 
-    sp.data %>% filter(!is.na(code))
+    sp.data <- sp.data %>%
+      group_by(elcode, scientific_name, current_srank,  new_rank,  change_entry_yr) %>%
+      filter(!is.na(code)) %>%
+      top_n(., 1) %>%
+      ungroup() %>%
+      mutate(multiples = TRUE)
+
 
   } else {
 
-    sp.data
+    sp.data %>%
+      mutate(multiples = FALSE)
   }
 
 })
 
 
 out <- do.call("rbind", out)
+
+write.csv(out, file.path("data","sp.check.temp.csv"))
+
 
 out.wide <- out %>%
   spread(change_entry_yr, new_rank) %>%
