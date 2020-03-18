@@ -235,61 +235,56 @@ if (!file.exists("data/tax_key_vert_full.csv")) {
 
 
 
-out
-
-
-
 # merge the species
 
-
-
 reviews <- new.0 %>%
-  select(year, scientific_name, ELCODE, bc_list,
-                            origin,  prov_status_review_date,
-                            prov_status_change_date) %>%
+  select(year, scientific_name, ELCODE, prov_status,
+         prov_status_review_date,
+         prov_status_change_date) %>%
   filter(year > 2012) %>%
   select(- year) %>%
   distinct() %>%
-  filter(prov_status_review_date > 2012)
+  filter(prov_status_review_date > 2012) %>%
+  filter(is.na(ELCODE)|!startsWith(ELCODE, "I"))
 
-
-
-  group_by(scientific_name) %>%
-  filter(year == max(year)) %>%
-  select(-year)
-
-# create a maximum year reviewed
-max_year_reviewed <- new.0 %>%
-  group_by(scientific_name, common_name,  ELCODE) %>%
-  summarise(latest_review = max(prov_status_review_date))
-
-
-goi <- c("Amphibians", "Breeding Birds", "Freshwater Fish", "Mammals", "Reptiles and Turtles", "NA", "data_check_required" )
-
-new.1  <- new.0 %>%
-  select(year, scientific_name, common_name, ELCODE,
-         prov_status, prov_status_review_date,
-         prov_status_change_date) %>%
-  mutate(scientific_name = tolower(scientific_name),
-         taxonomic_group = case_when(
-           startsWith(ELCODE, "AA")  ~ "Amphibians",
-           startsWith(ELCODE, "AB")  ~ "Breeding Birds",
-           startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
-           startsWith(ELCODE, "AM")  ~ "Mammals",
-           startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
-           startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
-           startsWith(ELCODE, "IIODO") ~ "Odonata",
-           startsWith(ELCODE, "IMBIV") ~ "Molluscs",
-           is.na(ELCODE) ~ "data_check_required",
-           TRUE ~ NA_character_)) %>%
+%>%
+  left_join(key) %>%
+  mutate(taxonomic_group = case_when(
+    startsWith(ELCODE, "AA")  ~ "Amphibians",
+    startsWith(ELCODE, "AB")  ~ "Breeding Birds",
+    startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
+    startsWith(ELCODE, "AM")  ~ "Mammals",
+    startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
+    startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
+    startsWith(ELCODE, "IIODO") ~ "Odonata",
+    startsWith(ELCODE, "IMBIV") ~ "Molluscs",
+    is.na(ELCODE) ~ "data_check_required",
+    TRUE ~ NA_character_)) %>%
   filter(is.na(ELCODE)|!startsWith(ELCODE, "I")) %>%
-  group_by(scientific_name) %>%
-  fill(ELCODE, .direction = "up") %>%
-  ungroup() %>%
-  filter(str_detect(taxonomic_group, paste(goi,collapse = "|"))) %>%
-  select(scientific_name, common_name, year, prov_status, ELCODE) %>%
-  spread(year, prov_status) %>%
+  filter(!taxonomic_group == "data_check_required") %>%
+  select(scientific_name, ELCODE, prov_status_review_date, prov_status) %>%
   distinct()
+
+
+
+
+xx <- reviews %>%
+  spread(prov_status_review_date, prov_status)
+
+
+
+
+
+
+
+  out.wide <- out %>%
+    spread(change_entry_yr, new_rank) %>%
+    select(-current_srank)
+
+
+
+#%>%
+#  distinct()
 
 
 sum(is.na(new.1$ELCODE))
