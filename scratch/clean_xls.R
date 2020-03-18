@@ -116,14 +116,12 @@ out <- lapply(elcode_list, function(x) {
       group_by(elcode, scientific_name, current_srank,  new_rank,  change_entry_yr) %>%
       filter(!is.na(code)) %>%
       top_n(., 1) %>%
-      ungroup() #%>%
-     # mutate(multiples = TRUE)
-
+      ungroup()
 
   } else {
 
-    sp.data #%>%
-    # mutate(multiples = FALSE)
+    sp.data
+
   }
 
 })
@@ -131,7 +129,6 @@ out <- lapply(elcode_list, function(x) {
 out <- do.call("rbind", out)
 
 #write.csv(out, file.path("data","sp.check.temp.csv"))
-
 
 out.wide <- out %>%
   spread(change_entry_yr, new_rank) %>%
@@ -229,49 +226,55 @@ if (!file.exists("data/tax_key_vert_full.csv")) {
 
 } else {
 
-  key <- read_csv("data/tax_key_vert_full.csv")
+  key <- read_csv("data/tax_key_vert_full.csv") %>%
+    rename_all(function(x) tolower(x))
+
 
 }
 
 
-
-# merge the species
+# generate the years when reviews occured per species
 
 reviews <- new.0 %>%
   select(year, scientific_name, ELCODE, prov_status,
          prov_status_review_date,
          prov_status_change_date) %>%
   filter(year > 2012) %>%
-  select(- year) %>%
+ # select(- year) %>%
   distinct() %>%
   filter(prov_status_review_date > 2012) %>%
-  filter(is.na(ELCODE)|!startsWith(ELCODE, "I"))
-
-%>%
-  left_join(key) %>%
-  mutate(taxonomic_group = case_when(
-    startsWith(ELCODE, "AA")  ~ "Amphibians",
-    startsWith(ELCODE, "AB")  ~ "Breeding Birds",
-    startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
-    startsWith(ELCODE, "AM")  ~ "Mammals",
-    startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
-    startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
-    startsWith(ELCODE, "IIODO") ~ "Odonata",
-    startsWith(ELCODE, "IMBIV") ~ "Molluscs",
-    is.na(ELCODE) ~ "data_check_required",
-    TRUE ~ NA_character_)) %>%
   filter(is.na(ELCODE)|!startsWith(ELCODE, "I")) %>%
-  filter(!taxonomic_group == "data_check_required") %>%
-  select(scientific_name, ELCODE, prov_status_review_date, prov_status) %>%
+  rename_all(function(x) tolower(x)) %>%
+  left_join(key)
+
+
+reviews_single <- reviews %>%
+  select(- year) %>%
   distinct()
 
 
 
+xx <- reviews %>%
+  group_by(scientific_name, elcode, prov_status_review_date) %>%
+
+
+
+
+duplicates <- reviews %>%
+  group_by(scientific_name, elcode, prov_status_review_date) %>%
+  summarise(count = n()) %>%
+  filter(count > 1)
+
+length(reviews$scientific_name)
+
 
 xx <- reviews %>%
   spread(prov_status_review_date, prov_status)
+# error with multiple calls in the same year
+# error with
 
 
+#write.csv( reviews , file.path("data","sp.check.temp.wide.csv"))
 
 
 
@@ -289,23 +292,8 @@ xx <- reviews %>%
 
 sum(is.na(new.1$ELCODE))
 
-## notes years for old and new datasets
-#hist.data <- 1992 - 2008, 2012 (retro - ranked) # data catalogue
-#new.data <-  "2004"  - 2018
 
-# merge hist and new data sets:
-all <- full_join(new.1, hist.data,  by = "scientific_name") %>%
-  mutate(taxonomic_group = case_when(
-    startsWith(ELCODE, "AA")  ~ "Amphibians",
-    startsWith(ELCODE, "AB")  ~ "Breeding Birds",
-    startsWith(ELCODE, "AF")  ~ "Freshwater Fish",
-    startsWith(ELCODE, "AM")  ~ "Mammals",
-    startsWith(ELCODE, "AR")  ~ "Reptiles and Turtles",
-    startsWith(ELCODE, "IILEP") ~ "Lepidoptera",
-    startsWith(ELCODE, "IIODO") ~ "Odonata",
-    startsWith(ELCODE, "IMBIV") ~ "Molluscs",
-    is.na(ELCODE) ~ "data_check_required",
-    TRUE ~ NA_character_))
+
 
 
 # flag species which 2012 date does not match between data sets.
