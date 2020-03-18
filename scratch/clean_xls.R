@@ -247,10 +247,73 @@ reviews <- new.0 %>%
   rename_all(function(x) tolower(x)) %>%
   left_join(key)
 
+# separate those with multiples or conflicts with year and rank from those
+# with single year. # 102
 
-reviews_single <- reviews %>%
-  select(- year) %>%
+singles <- reviews %>%
+  select(-year) %>%
+  distinct() %>%
+  group_by(scientific_name, prov_status_review_date) %>%
+  summarise(count = n()) %>%
+  distinct() %>%
+  filter(count == 1) %>%
+  select(scientific_name) 1
+
+# these species were being flagged for both single and doubles so split out
+duplicates.sp <- c("geothlypis trichas", "phalacrocorax auritus")
+
+singles.wide <- reviews %>%
+  select(-year, -prov_status_change_date) %>%
+  distinct() %>%
+  filter(scientific_name %in% singles$scientific_name)  %>%
+  filter(!scientific_name %in% duplicates.sp) %>%
+  distinct() %>%
+  spread(prov_status_review_date, prov_status)
+
+
+# join the out data with the singles wide.data (no conflicts in year by status)
+
+recent <- singles.wide %>%
+  left_join(out.wide)
+
+
+# doubles - add the change dataset and
+
+doubles <- reviews %>%
+  select(-year, -prov_status_change_date) %>%
+  filter(!scientific_name %in% singles$scientific_name) %>%
   distinct()
+
+# fix difference in ranks based on B or no B
+
+# fix difference in elcode ?
+
+
+group_by()
+
+
+%>%
+  left_join(out)
+
+
+
+
+write.csv(doubles, file.path("data","sp.check.temp.wide.csv"))
+
+
+
+
+   spread(prov_status_review_date, prov_status)
+
+
+
+
+
+
+
+
+write.csv(xx, file.path("data","sp.check.temp.wide.csv"))
+
 
 
 
@@ -259,11 +322,6 @@ xx <- reviews %>%
 
 
 
-
-duplicates <- reviews %>%
-  group_by(scientific_name, elcode, prov_status_review_date) %>%
-  summarise(count = n()) %>%
-  filter(count > 1)
 
 length(reviews$scientific_name)
 
@@ -274,7 +332,7 @@ xx <- reviews %>%
 # error with
 
 
-#write.csv( reviews , file.path("data","sp.check.temp.wide.csv"))
+write.csv( reviews , file.path("data","sp.check.temp.wide.csv"))
 
 
 
