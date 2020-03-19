@@ -42,7 +42,7 @@ change.data <- file.path("data",
                       "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.csv"
 )
 
-cdata <- read_csv(change.data,
+cdata.0 <- read_csv(change.data,
                   col_types = cols_only(
                     ELCODE = col_character(),
                     SCIENTIFIC_NAME = col_character(),
@@ -59,7 +59,6 @@ cdata <- read_csv(change.data,
                     COMMENTS = col_character()
                   )
 ) %>%
-
   rename_all(function(x) tolower(gsub("\\s+", "_", x))) %>%
   filter(!startsWith(elcode, "I")) %>%
   filter(!grepl("^(Search|Sort|Open|Animals)", scientific_name),
@@ -75,7 +74,11 @@ cdata <- read_csv(change.data,
            startsWith(elcode, "AF")  ~ "Freshwater Fish",
            startsWith(elcode, "AM")  ~ "Mammals",
            startsWith(elcode, "AR")  ~ "Reptiles and Turtles",
-           TRUE ~ NA_character_)) %>%
+           TRUE ~ NA_character_))
+
+# keep the full set of change data to use for assessing the multiple review of new data
+
+cdata <- cdata.0 %>%
   filter(change_year > 2012)
 
 #660 lines
@@ -83,7 +86,6 @@ cdata <- read_csv(change.data,
 # create a list of unique species codes
 
 elcode_list <- as.list(unique(cdata$elcode))
-
 
 out <- lapply(elcode_list, function(x) {
 
@@ -142,7 +144,6 @@ out <- hist.data %>%
   left_join(out.wide) %>%
   select(taxonomic_group, scientific_name, elcode, code,
          comments, everything())
-
 
 
 #check the pre 2012 and post 2012
@@ -284,7 +285,61 @@ doubles <- reviews %>%
   filter(!scientific_name %in% singles$scientific_name) %>%
   distinct()
 
+double.sp <- as.list(unique(doubles$scientific_name))
+
+
 # fix difference in ranks based on B or no B
+
+
+double.out <- lapply(double.sp, function(x) {
+
+    x <-  double.sp[[2]]  # 249, # 227
+
+  sp.rows <- doubles %>%
+    filter(scientific_name == x)
+
+  # fix difference in ranks based on B or no B
+
+  change.sp <- cdata.0 %>%
+    filter(scientific_name == x)
+
+  if(length(unique(sp.rows$prov_status))>1) {
+
+    sp.rows <- sp.rows %>%
+
+        is.na(change_entry_yr), change_year, change_entry_yr),
+        new_rank = ifelse(is.na(new_rank), current_srank, new_rank))
+  }
+
+  sp.data <- sp.rows %>%
+    select(elcode, scientific_name, current_srank,
+           taxonomic_group, current_srank,
+           new_rank, change_year,change_entry_yr,
+           code, reason_desc, comments) %>%
+    filter(change_entry_yr > 2012) %>%
+    distinct() %>%
+    select(elcode, scientific_name, current_srank, new_rank,
+           change_entry_yr, code, comments)
+
+  if(nrow(sp.data)>1){
+
+    sp.data <- sp.data %>%
+      group_by(elcode, scientific_name, current_srank,  new_rank,  change_entry_yr) %>%
+      filter(!is.na(code)) %>%
+      top_n(., 1) %>%
+      ungroup()
+
+  } else {
+
+    sp.data
+
+  }
+
+})
+
+out <- do.call("rbind", out)
+
+
 
 # fix difference in elcode ?
 
