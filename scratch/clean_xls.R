@@ -264,8 +264,9 @@ singles.wide <- reviews %>%
   distinct() %>%
   filter(scientific_name %in% singles$scientific_name)  %>%
   filter(!scientific_name %in% duplicates.sp) %>%
-  distinct() %>%
-  spread(prov_status_review_date, prov_status)
+  distinct()
+#%>%
+#  spread(prov_status_review_date, prov_status)
 
 
 # join the out data with the singles wide.data (no conflicts in year by status)
@@ -281,63 +282,91 @@ doubles <- reviews %>%
 
 double.sp <- as.list(unique(doubles$scientific_name))
 
+# fix difference due to multiple ELCODES per species.
 
-# fix difference in ranks based on B or no B
-
-double.out <- lapply(double.sp, function(x) {
-
-    x <-  double.sp[[2]]  # 249, # 227
+elcode.fix <- lapply(double.sp, function(x) {
 
   sp.rows <- doubles %>%
     filter(scientific_name == x)
 
-  # fix difference in ranks based on B or no B
+    if(length(unique(sp.rows$elcode))>1){
 
-  change.sp <- cdata.0 %>%
+      sp.rows %>% mutate(comment = "check multiple elcodes per sciname")
+
+    } else {
+
+      sp.rows %>% mutate(comment = "still need to fix these")
+
+    }
+
+})
+
+elcode.fix <- do.call("rbind", elcode.fix) %>%
+  filter(comment == "check multiple elcodes per sciname")
+
+
+# fix difference due to multiple ranks per species per year
+
+double.sp <- doubles %>%
+  select(scientific_name) %>%
+  filter(!scientific_name %in% elcode.fix$scientific_name)
+
+double.sp <- as.list(unique(double.sp$scientific_name))
+
+
+rank.fix <- lapply(double.sp, function(x) {
+
+#   x <-  double.sp[[1]]  # 249, # 227
+
+sp.rows <- doubles %>%
     filter(scientific_name == x)
-
-  # if the multiples are due to differences in species ranks within same year
-  # fix difference in ranks based on B or no B
 
   if(length(unique(sp.rows$prov_status))>1) {
 
-    sp.rows <- sp.rows %>%
+    # get the year where there is multiple ranks
+    conflict.yr <- unique(sp.rows$prov_status_review_date)
 
-#        is.na(change_entry_yr), change_year, change_entry_yr),
-#        new_rank = ifelse(is.na(new_rank), current_srank, new_rank))
-#  }
+    # filter the original review data to find matching sp. and conflict year
+    # select the rank at the most recent annual year ie: 2018)
+    review.dates <- reviews %>%
+      filter(scientific_name == x & prov_status_review_date == conflict.yr) %>%
+      filter(year == max(year)) %>%
+      select(prov_status) %>%
+      pull()
 
-  sp.data <- sp.rows %>%
-    select(elcode, scientific_name, prov_status, prov_status_review_date) %>%
-    distinct()
+    # filter the doubles to match the most current rank & add comment.
+    sp.data <- sp.rows %>%
+      select(elcode, scientific_name, prov_status, prov_status_review_date) %>%
+      filter(prov_status == review.dates) %>%
+      mutate(comment = "multiple sranks - selected most recent srank")
 
+    sp.data
 
-  if(length(unique(sp.rows$elcode))>1){
+  } else {
 
-     sp.data <- sp.data %>%
-        mutate(comment = "check multiple elcodes per sciname")
-
-   } else {
-
-    sp.data <- sp.data %>%
-      muatate(comment = "")
-
+    print (paste0 ("no rank conflict for ", x))
   }
 
 })
 
-double.out <- do.call("rbind", double.out)
+rank.fix <- do.call("rbind", rank.fix)
+
+# now assemble all data and spread to wide format
+
+doubles <- bind_rows(elcode.fix, rank.fix, singles.wide,out)
+
+out
 
 
+all.wide <- doubles %>%
+  spread(prov_status_review_date, prov_status)
 
-# fix difference in elcode ?
+all.wide <- hist.data %>%
+  left_join(all.wide) %>%
+  select( taxonomic_group, scientific_name, elcode, comment, everything())
 
 
-double.wide <- sp.data %>%
-spread(prov_status_review_date, prov_status)
-
-
-
+# add the changes data to
 
 
 write.csv(doubles, file.path("data","sp.check.temp.wide.csv"))
