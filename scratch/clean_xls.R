@@ -130,13 +130,9 @@ out <- lapply(elcode_list, function(x) {
 
 out <- do.call("rbind", out)
 
-#write.csv(out, file.path("data","sp.check.temp.csv"))
-
 out.wide <- out %>%
   spread(change_entry_yr, new_rank) %>%
   select(-current_srank)
-
-#write.csv(out.wide, file.path("data","sp.check.temp.wide.csv"))
 
 # merge with the historic dataset and check for mismatch on 2012 dates
 
@@ -146,10 +142,8 @@ out <- hist.data %>%
          comments, everything())
 
 
-#check the pre 2012 and post 2012
-
+# check the pre 2012 and post 2012
 # maybe still need to add the full list of species (?) ie the big table
-
 # select the 2012 historic data set to compare latest data changes
 
 
@@ -248,8 +242,8 @@ reviews <- new.0 %>%
   rename_all(function(x) tolower(x)) %>%
   left_join(key)
 
-# separate those with multiples or conflicts with year and rank from those
-# with single year. # 102
+# separate those with multiple year x ranks or conflicts with year and rank from those
+# with single year.
 
 singles <- reviews %>%
   select(-year) %>%
@@ -258,9 +252,11 @@ singles <- reviews %>%
   summarise(count = n()) %>%
   distinct() %>%
   filter(count == 1) %>%
-  select(scientific_name) 1
+  select(scientific_name)
 
-# these species were being flagged for both single and doubles so split out
+# these species were being flagged for both single and doubles so split out. In 2013 non-conflict,
+# but in 2015 conflict with multiple ranks for same year.
+
 duplicates.sp <- c("geothlypis trichas", "phalacrocorax auritus")
 
 singles.wide <- reviews %>%
@@ -273,10 +269,8 @@ singles.wide <- reviews %>%
 
 
 # join the out data with the singles wide.data (no conflicts in year by status)
-
 recent <- singles.wide %>%
   left_join(out.wide)
-
 
 # doubles - add the change dataset and
 
@@ -290,7 +284,6 @@ double.sp <- as.list(unique(doubles$scientific_name))
 
 # fix difference in ranks based on B or no B
 
-
 double.out <- lapply(double.sp, function(x) {
 
     x <-  double.sp[[2]]  # 249, # 227
@@ -303,52 +296,46 @@ double.out <- lapply(double.sp, function(x) {
   change.sp <- cdata.0 %>%
     filter(scientific_name == x)
 
+  # if the multiples are due to differences in species ranks within same year
+  # fix difference in ranks based on B or no B
+
   if(length(unique(sp.rows$prov_status))>1) {
 
     sp.rows <- sp.rows %>%
 
-        is.na(change_entry_yr), change_year, change_entry_yr),
-        new_rank = ifelse(is.na(new_rank), current_srank, new_rank))
-  }
+#        is.na(change_entry_yr), change_year, change_entry_yr),
+#        new_rank = ifelse(is.na(new_rank), current_srank, new_rank))
+#  }
 
   sp.data <- sp.rows %>%
-    select(elcode, scientific_name, current_srank,
-           taxonomic_group, current_srank,
-           new_rank, change_year,change_entry_yr,
-           code, reason_desc, comments) %>%
-    filter(change_entry_yr > 2012) %>%
-    distinct() %>%
-    select(elcode, scientific_name, current_srank, new_rank,
-           change_entry_yr, code, comments)
+    select(elcode, scientific_name, prov_status, prov_status_review_date) %>%
+    distinct()
 
-  if(nrow(sp.data)>1){
+
+  if(length(unique(sp.rows$elcode))>1){
+
+     sp.data <- sp.data %>%
+        mutate(comment = "check multiple elcodes per sciname")
+
+   } else {
 
     sp.data <- sp.data %>%
-      group_by(elcode, scientific_name, current_srank,  new_rank,  change_entry_yr) %>%
-      filter(!is.na(code)) %>%
-      top_n(., 1) %>%
-      ungroup()
-
-  } else {
-
-    sp.data
+      muatate(comment = "")
 
   }
 
 })
 
-out <- do.call("rbind", out)
+double.out <- do.call("rbind", double.out)
 
 
 
 # fix difference in elcode ?
 
 
-group_by()
+double.wide <- sp.data %>%
+spread(prov_status_review_date, prov_status)
 
-
-%>%
-  left_join(out)
 
 
 
