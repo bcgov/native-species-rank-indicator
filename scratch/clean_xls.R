@@ -89,8 +89,6 @@ elcode_list <- as.list(unique(cdata$elcode))
 
 out <- lapply(elcode_list, function(x) {
 
-  #  x <-  elcode_list[[1]]  # 249, # 227
-
   sp.rows <- cdata %>%
     filter(elcode == x)
 
@@ -128,24 +126,10 @@ out <- lapply(elcode_list, function(x) {
 
 })
 
-out <- do.call("rbind", out)
-
-out.wide <- out %>%
-  spread(change_entry_yr, new_rank) %>%
-  select(-current_srank)
-
-# merge with the historic dataset and check for mismatch on 2012 dates
-
-out <- hist.data %>%
-  left_join(out.wide) %>%
-  select(taxonomic_group, scientific_name, elcode, code,
-         comments, everything())
-
-
-# check the pre 2012 and post 2012
-# maybe still need to add the full list of species (?) ie the big table
-# select the 2012 historic data set to compare latest data changes
-
+out <- do.call("rbind", out) %>%
+  select(-current_srank) %>%
+  rename(prov_status = new_rank,
+         prov_status_review_date = change_entry_yr)
 
 
 
@@ -259,19 +243,12 @@ singles <- reviews %>%
 
 duplicates.sp <- c("geothlypis trichas", "phalacrocorax auritus")
 
-singles.wide <- reviews %>%
+singles.long <- reviews %>%
   select(-year, -prov_status_change_date) %>%
   distinct() %>%
   filter(scientific_name %in% singles$scientific_name)  %>%
   filter(!scientific_name %in% duplicates.sp) %>%
   distinct()
-#%>%
-#  spread(prov_status_review_date, prov_status)
-
-
-# join the out data with the singles wide.data (no conflicts in year by status)
-recent <- singles.wide %>%
-  left_join(out.wide)
 
 # doubles - add the change dataset and
 
@@ -316,8 +293,6 @@ double.sp <- as.list(unique(double.sp$scientific_name))
 
 rank.fix <- lapply(double.sp, function(x) {
 
-#   x <-  double.sp[[1]]  # 249, # 227
-
 sp.rows <- doubles %>%
     filter(scientific_name == x)
 
@@ -336,7 +311,7 @@ sp.rows <- doubles %>%
 
     # filter the doubles to match the most current rank & add comment.
     sp.data <- sp.rows %>%
-      select(elcode, scientific_name, prov_status, prov_status_review_date) %>%
+      select(elcode, scientific_name, prov_status, prov_status_review_date, taxonomic_group) %>%
       filter(prov_status == review.dates) %>%
       mutate(comment = "multiple sranks - selected most recent srank")
 
@@ -353,28 +328,21 @@ rank.fix <- do.call("rbind", rank.fix)
 
 # now assemble all data and spread to wide format
 
-doubles <- bind_rows(elcode.fix, rank.fix, singles.wide,out)
+doubles <- bind_rows(elcode.fix, rank.fix, singles.long)
 
-out
+all.data <- bind_rows(doubles, out)
 
-
-all.wide <- doubles %>%
+all.data <- all.data %>%
   spread(prov_status_review_date, prov_status)
 
-all.wide <- hist.data %>%
-  left_join(all.wide) %>%
-  select( taxonomic_group, scientific_name, elcode, comment, everything())
+all.wide <- left_join(hist.data, all.data) %>%
+  select( taxonomic_group, scientific_name, elcode, comment, code, comments, everything())%>%
+  distinct()
 
 
 # add the changes data to
 
-
-write.csv(doubles, file.path("data","sp.check.temp.wide.csv"))
-
-
-
-
-   spread(prov_status_review_date, prov_status)
+write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
 
 
@@ -383,43 +351,13 @@ write.csv(doubles, file.path("data","sp.check.temp.wide.csv"))
 
 
 
-write.csv(xx, file.path("data","sp.check.temp.wide.csv"))
-
-
-
-
-xx <- reviews %>%
-  group_by(scientific_name, elcode, prov_status_review_date) %>%
-
-
-
-
-length(reviews$scientific_name)
-
-
-xx <- reviews %>%
-  spread(prov_status_review_date, prov_status)
-# error with multiple calls in the same year
-# error with
-
-
-write.csv( reviews , file.path("data","sp.check.temp.wide.csv"))
 
 
 
 
 
-  out.wide <- out %>%
-    spread(change_entry_yr, new_rank) %>%
-    select(-current_srank)
 
 
-
-#%>%
-#  distinct()
-
-
-sum(is.na(new.1$ELCODE))
 
 
 
