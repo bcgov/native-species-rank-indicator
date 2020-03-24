@@ -280,6 +280,25 @@ elcode.fix <- do.call("rbind", elcode.fix) %>%
   filter(comment == "check multiple elcodes per sciname")
 
 
+#Fix multiple codes
+added_elcode <- tribble(~ scientific_name, ~ elcode,
+                          "sula nebouxii", "ABNFB01020",
+                          "aphelocoma californica", "ABPAV06070",
+                          "eugenes fulgens", "ABNUC37020",
+                          "glaucomys sabrinus",	"AMAFB09030",
+                          "loxia curvirostra", "ABPBY05050",
+                          "oceanodroma leucorhoa", "ABNDC04130",
+                          "ochotona princeps", "AMAEA01030",
+                          "perognathus parvus",	"AMAFD01100"
+                        )
+
+
+elcode.fix <- elcode.fix %>%
+   filter(elcode %in% added_elcode$elcode) %>%
+   mutate(comment = "fixed multiple elcode")
+
+
+
 # fix difference due to multiple ranks per species per year
 
 double.sp <- doubles %>%
@@ -333,12 +352,8 @@ all.data <- bind_rows(doubles, out)
 all.data <- all.data %>%
   spread(prov_status_review_date, prov_status)
 
-#length(all.data$taxonomic_group)
-#[1] 1035
-
-
-
-# merge issue here as dropping species without historic records
+# need to add historic data
+# decided to use full join here and deal with the duplicate/messiness
 
 all.wide <- full_join(all.data, hist.data) %>%
   select(taxonomic_group, scientific_name, elcode, comment, code, comments,
@@ -347,24 +362,24 @@ all.wide <- full_join(all.data, hist.data) %>%
          "2013" ,"2014" , "2015" , "2016", "2017" ,"2018", "2019", everything()) %>%
     distinct()
 
-length(all.wide$scientific_name)
-
-# currently droping historic species or those with changes
-
-#ie: Pseudacris maculata (last reviewed in 2010) appears on hist.data but not on new reviews.
 
 
-in.sp <- unique(all.wide$scientific_name)
-hist.sp <- unique(hist.data$scientific_name)
-
-missing.sp <- hist.sp[!hist.sp %in% in.sp]
-
-length(hist.data$taxonomic_group)
-
-
-
-
-# 167 dropped
+# #ie: Pseudacris maculata (last reviewed in 2010) appears on hist.data but not on new reviews.
+#
+# in.sp <- unique(all.wide$scientific_name)
+# hist.sp <- unique(hist.data$scientific_name)
+#
+# missing.sp <- hist.sp[!hist.sp %in% in.sp]
+#
+# hist.data.add <- hist.data %>%
+#   filter(scientific_name %in% missing.sp) %>%
+#  left_join(key)
+#
+#
+# all.wide <- bind_rows(all.wide, hist.data.add )
+# length(hist.data$taxonomic_group)
+#
+#
 
 
 # add the changes data to
@@ -372,24 +387,9 @@ length(hist.data$taxonomic_group)
 write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
 
+elcode_list
 
-
-
-pseudacris maculata ~ AAABC05130
-
-#Fill in missing elcode
-added_elcode <- tribble(~scientific_name,~ elcode,
-                         "pseudacris maculata", "AAABC05130",
-                         "accipiter gentilis laingi", "ABNKC12062"
-                        aegolius acadicus "ABNSB15020"
-
-
-
-
-
-### Up To HERE - ignore below here.
-
-
+all.wide.elcode.fix  <- all.wide
 
 
 
