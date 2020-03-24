@@ -33,9 +33,6 @@ hist.data <- hist.data %>%
   spread(Year, SRank) %>%
   rename_all(function(x) tolower(gsub("\\s+", "_", x)))
 
-#write.csv(hist.data, file.path("data", "hist.data.csv"), row.names = FALSE)
-
-
 # Data set 2: read in the rank change data sheet
 
 change.data <- file.path("data",
@@ -81,13 +78,14 @@ cdata.0 <- read_csv(change.data,
 cdata <- cdata.0 %>%
   filter(change_year > 2012)
 
-#660 lines
 
 # create a list of unique species codes
 
 elcode_list <- as.list(unique(cdata$elcode))
 
 out <- lapply(elcode_list, function(x) {
+
+#  x <- elcode_list[3]
 
   sp.rows <- cdata %>%
     filter(elcode == x)
@@ -169,6 +167,7 @@ if (!file.exists("data/tax_key_vert_full.csv")) {
 
   # create a key with all historic ELcode, names, scinema , Taxanomic
   full_key <- new.0 %>%
+   # xx <- new.0 %>%
     select(scientific_name) %>%
     distinct() %>%
     left_join(new.0 %>%
@@ -180,7 +179,7 @@ if (!file.exists("data/tax_key_vert_full.csv")) {
 
   full_key$ELCODE[is.na(full_key$ELCODE)] <- lookup_elcodes(full_key$scientific_name[is.na(full_key$ELCODE)])
 
-#  sum(is.na(full_key$ELCODE))
+  sum(is.na(full_key$ELCODE))
 
   # remove the inverts keep the NA's
   full_key <- full_key %>%
@@ -207,7 +206,6 @@ if (!file.exists("data/tax_key_vert_full.csv")) {
 
   key <- read_csv("data/tax_key_vert_full.csv") %>%
     rename_all(function(x) tolower(x))
-
 
 }
 
@@ -335,10 +333,29 @@ all.data <- bind_rows(doubles, out)
 all.data <- all.data %>%
   spread(prov_status_review_date, prov_status)
 
-all.wide <- left_join(hist.data, all.data) %>%
-  select( taxonomic_group, scientific_name, elcode, comment, code, comments, everything())%>%
-  distinct()
+#length(all.data$taxonomic_group)
+#[1] 1035
 
+
+
+# merge issue here as dropping species without historic records
+
+all.wide <- left_join(all.data, hist.data, by = c("scientific_name")) %>%
+  select(scientific_name, elcode, comment, code, comments,
+         "1992", "1995","1997", "1998", "2001","2002" , "2003",
+         "2005","2006", "2007", "2008", "2012",
+         "2013" ,"2014" , "2015" , "2016", "2017" ,"2018", "2019", everything()) %>%
+  mutate(taxonomic_group = case_when(
+    startsWith(elcode, "AA")  ~ "Amphibians",
+    startsWith(elcode, "AB")  ~ "Breeding Birds",
+    startsWith(elcode, "AF")  ~ "Freshwater Fish",
+    startsWith(elcode, "AM")  ~ "Mammals",
+    startsWith(elcode, "AR")  ~ "Reptiles and Turtles",
+    is.na(elcode) ~ "data_check_required",
+    TRUE ~ NA_character_)) %>%
+    distinct()
+
+length(all.wide$scientific_name)
 
 # add the changes data to
 
@@ -348,7 +365,13 @@ write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
 
 
+pseudacris maculata ~ AAABC05130
 
+#Fill in missing elcode
+added_elcode <- tribble(~scientific_name,~ elcode,
+                         "pseudacris maculata", "AAABC05130",
+                         "accipiter gentilis laingi", "ABNKC12062"
+                        aegolius acadicus "ABNSB15020"
 
 
 
