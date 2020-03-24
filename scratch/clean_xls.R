@@ -363,23 +363,77 @@ all.wide <- full_join(all.data, hist.data) %>%
     distinct()
 
 
+# list of things to fix:
 
-# #ie: Pseudacris maculata (last reviewed in 2010) appears on hist.data but not on new reviews.
-#
-# in.sp <- unique(all.wide$scientific_name)
-# hist.sp <- unique(hist.data$scientific_name)
-#
-# missing.sp <- hist.sp[!hist.sp %in% in.sp]
-#
-# hist.data.add <- hist.data %>%
-#   filter(scientific_name %in% missing.sp) %>%
-#  left_join(key)
-#
-#
-# all.wide <- bind_rows(all.wide, hist.data.add )
-# length(hist.data$taxonomic_group)
-#
-#
+# 1: add elcode to missing elcode
+
+sum(is.na(all.wide$elcode))
+
+missing.elcode.all <- all.wide %>%
+  filter(is.na(elcode)) %>%
+  select(-(elcode)) %>%
+  left_join(key) %>%
+  select(scientific_name, elcode)
+
+
+all.wide  <- all.wide %>%
+  left_join( missing.elcode.all, by = "scientific_name") %>%
+  mutate(elcode = ifelse(is.na(elcode.x), elcode.y, elcode.x)) %>%
+  select(-elcode.x, -elcode.y)
+
+
+# fix the species with duplicate elcode:
+
+multiple.elcodes <- all.wide %>% group_by(scientific_name) %>%
+  summarise(n.elcode = length(unique(elcode))) %>%
+  filter(n.elcode > 1) %>%
+  pull(scientific_name)
+
+
+all.wide <- all.wide %>%
+  mutate(elcode = ifelse(scientific_name == "larus glaucoides","ABNNM03270",
+                         ifelse(scientific_name ==  "martes americana", "AMAJF01040",
+                                elcode)))
+
+
+#write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
+
+# note still some missing elcodes (NAs as dont match key)
+
+# 2: add taxanomic field if missing
+all.wide <- all.wide %>%
+  mutate(taxonomic_group = case_when(
+  startsWith(elcode, "AA")  ~ "Amphibians",
+  startsWith(elcode, "AB")  ~ "Breeding Birds",
+  startsWith(elcode, "AF")  ~ "Freshwater Fish",
+  startsWith(elcode, "AM")  ~ "Mammals",
+  startsWith(elcode, "AR")  ~ "Reptiles and Turtles",
+  TRUE ~ NA_character_))
+
+unique(all.wide.temp$taxonomic_group)
+
+# 3. merge rows with multiple rows due to hist and new data inconsistencies
+
+# get list of sp with more than one row.
+
+multiple.rows <- all.wide %>%
+  group_by(scientific_name) %>%
+  summarise(n.rows = n()) %>%
+  filter(n.rows > 1) %>%
+  pull(scientific_name)
+
+
+
+## up to here
+
+msp.rows<- all.wide %>%
+  filter(scientific_name %in% )
+  gather(.,  "1992", "1995","1997", "1998", "2001","2002" , "2003",
+         "2005","2006", "2007", "2008", "2012",
+         "2013" ,"2014" , "2015" , "2016", "2017" ,"2018", "2019",
+         key = "year", value = "srank")
+
+
 
 
 # add the changes data to
@@ -387,9 +441,12 @@ all.wide <- full_join(all.data, hist.data) %>%
 write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
 
-elcode_list
 
-all.wide.elcode.fix  <- all.wide
+
+
+
+
+
 
 
 
