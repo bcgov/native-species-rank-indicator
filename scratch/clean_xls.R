@@ -340,22 +340,32 @@ all.data <- all.data %>%
 
 # merge issue here as dropping species without historic records
 
-all.wide <- left_join(all.data, hist.data, by = c("scientific_name")) %>%
-  select(scientific_name, elcode, comment, code, comments,
+all.wide <- full_join(all.data, hist.data) %>%
+  select(taxonomic_group, scientific_name, elcode, comment, code, comments,
          "1992", "1995","1997", "1998", "2001","2002" , "2003",
          "2005","2006", "2007", "2008", "2012",
          "2013" ,"2014" , "2015" , "2016", "2017" ,"2018", "2019", everything()) %>%
-  mutate(taxonomic_group = case_when(
-    startsWith(elcode, "AA")  ~ "Amphibians",
-    startsWith(elcode, "AB")  ~ "Breeding Birds",
-    startsWith(elcode, "AF")  ~ "Freshwater Fish",
-    startsWith(elcode, "AM")  ~ "Mammals",
-    startsWith(elcode, "AR")  ~ "Reptiles and Turtles",
-    is.na(elcode) ~ "data_check_required",
-    TRUE ~ NA_character_)) %>%
     distinct()
 
 length(all.wide$scientific_name)
+
+# currently droping historic species or those with changes
+
+#ie: Pseudacris maculata (last reviewed in 2010) appears on hist.data but not on new reviews.
+
+
+in.sp <- unique(all.wide$scientific_name)
+hist.sp <- unique(hist.data$scientific_name)
+
+missing.sp <- hist.sp[!hist.sp %in% in.sp]
+
+length(hist.data$taxonomic_group)
+
+
+
+
+# 167 dropped
+
 
 # add the changes data to
 
