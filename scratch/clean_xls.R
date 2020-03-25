@@ -297,8 +297,6 @@ elcode.fix <- elcode.fix %>%
    filter(elcode %in% added_elcode$elcode) %>%
    mutate(comment = "fixed multiple elcode")
 
-
-
 # fix difference due to multiple ranks per species per year
 
 double.sp <- doubles %>%
@@ -320,6 +318,7 @@ sp.rows <- doubles %>%
 
     # filter the original review data to find matching sp. and conflict year
     # select the rank at the most recent annual year ie: 2018)
+
     review.dates <- reviews %>%
       filter(scientific_name == x & prov_status_review_date == conflict.yr) %>%
       filter(year == max(year)) %>%
@@ -352,8 +351,8 @@ all.data <- bind_rows(doubles, out)
 all.data <- all.data %>%
   spread(prov_status_review_date, prov_status)
 
-# need to add historic data
-# decided to use full join here and deal with the duplicate/messiness
+# add historic data using full join to stop dropping species present in only new or historic
+# data sets - code below deals with the duplicate/messiness as a result
 
 all.wide <- full_join(all.data, hist.data) %>%
   select(taxonomic_group, scientific_name, elcode, comment, code, comments,
@@ -363,7 +362,7 @@ all.wide <- full_join(all.data, hist.data) %>%
     distinct()
 
 
-# list of things to fix:
+# Data fixes:
 
 # 1: add elcode to missing elcode
 
@@ -381,7 +380,7 @@ all.wide  <- all.wide %>%
   select(-elcode.x, -elcode.y)
 
 
-# fix the species with duplicate elcode:
+# 2. fix the species with duplicate elcode:
 
 multiple.elcodes <- all.wide %>% group_by(scientific_name) %>%
   summarise(n.elcode = length(unique(elcode))) %>%
@@ -394,12 +393,10 @@ all.wide <- all.wide %>%
                          ifelse(scientific_name ==  "martes americana", "AMAJF01040",
                                 elcode)))
 
-
-#write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
-
 # note still some missing elcodes (NAs as dont match key)
 
-# 2: add taxanomic field if missing
+# 3 : add taxanomic field if missing
+
 all.wide <- all.wide %>%
   mutate(taxonomic_group = case_when(
   startsWith(elcode, "AA")  ~ "Amphibians",
@@ -411,28 +408,14 @@ all.wide <- all.wide %>%
   mutate(comment = ifelse(is.na(elcode),"check elcode manually", comment))
 
 
-# 3. merge rows with multiple rows due to hist and new data inconsistencies
-
-# get list of sp with more than one row.
-
-multiple.rows <- all.wide %>%
-  group_by(scientific_name) %>%
-  summarise(n.rows = n()) %>%
-  filter(n.rows > 1) %>%
-  pull(scientific_name)
-
-# 246 species ( ~ 500 rows?)
-
-
-## up to here
+# 4. merge rows with multiple rows per species due to hist and new data inconsistencies
+# convert all data to long format then cycle through species
 
 all.long <- all.wide %>%
- # filter(scientific_name %in% )
   gather(.,  "1992", "1995","1997", "1998", "2001","2002" , "2003",
          "2005","2006", "2007", "2008", "2012",
          "2013" ,"2014" , "2015" , "2016", "2017" ,"2018", "2019",
          key = "year", value = "srank")
-
 
 sp.list <- as.list(unique(all.long$scientific_name))
 
@@ -443,39 +426,44 @@ all.long.temp <- lapply(sp.list, function (x) {
 
   if(length(sp.temp$year) == length(unique(sp.temp$year))) {
 
-    print(x)
-
     sp.temp %>%
       select(taxonomic_group, scientific_name,  elcode, year, comment, code,
              comments, srank)
 
   } else {
 
-   zz <-  sp.temp %>%
+    sp.temp %>%
       group_by(taxonomic_group, scientific_name, elcode, year) %>%
-      summarise(commment = as.character(max(comment, na.rm = TRUE)),
+      summarise(comment = as.character(max(comment, na.rm = TRUE)),
                 code = as.character(max(code, na.rm = TRUE)),
                 comments = as.character(max(comments, na.rm = TRUE)),
                 srank = as.character(max(srank, na.rm = TRUE))) %>%
       mutate(code = as.numeric(code)) %>%
-      ungroup() #%>%
-      #select(taxonomic_group, scientific_name,  comment,   code,
-      #       comments, elcode, year, srank)
-
+      ungroup()
 
   }
 })
 
 all.long.temp  <- do.call("rbind", all.long.temp)
 
-# add the changes data to
+# convert back to wide format
+
+all.wide <- all.long.temp %>%
+  spread(year, srank)
+
+
 
 write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
 
+# now check if pre 2012 rank == post 2012 rank
 
 
 
+
+
+names(all.long.temp
+      )
 
 
 
@@ -503,37 +491,6 @@ all  <- all %>%
          Update_2008_data = ifelse(`2008.y` ==`2008.x`, 0, 1),
          )
 
-unmatched <- all %>%
-  filter(all$Update_2012_data == 1 ) #%>%
-#  select(scientific_name, common_name, ELCODE,`2012.x`, `2012.y`)
-
-unmatched05 <- all %>%
-  filter(all$Update_2005_data == 1 )# %>%
- # select(scientific_name, common_name, ELCODE,`2005.x`, `2005.y`)
-
-unmatched06 <- all %>%
-  filter(all$Update_2006_data == 1 ) #%>%
-#  select(scientific_name, common_name, ELCODE,`2006.x`, `2006.y`)
-
-unmatched07 <- all %>%
-  filter(all$Update_2007_data == 1 ) #%>%
-  #select(scientific_name, common_name, ELCODE,`2007.x`, `2007.y`)
-
-unmatched08 <- all %>%
-  filter(all$Update_2008_data == 1 ) #%>%
-#select(scientific_name, common_name, ELCODE,`2007.x`, `2007.y`)
-
-# join all species which have unmatched datasets
-
-temp <-bind_rows (unmatched, unmatched05, unmatched06, unmatched07,
-                  unmatched08 ) %>%
-  select(taxonomic_group, scientific_name, common_name, ELCODE,
-         "1992", "1995","1997", "1998", "2001","2002" , "2003",
-         "2004", "2005.y", "2005.x",  "2006.x", "2006.y", "2007.x","2007.y"  ,
-         "2008.x", "2008.y",  "2009" , "2010" , "2011" , "2012.x", "2012.y" ,
-         "2013" ,"2014" , "2015" , "2016", "2017"  ,"2018", everything())
-
-write.csv(temp, file.path("data","sp.check.temp.csv"))
 
 
 #write.csv(all, file.path("data", "consolidated_output.csv"), row.names = FALSE)
@@ -543,6 +500,9 @@ write.csv(temp, file.path("data","sp.check.temp.csv"))
 #  group_by(taxonomic_group, prov_status_review_date) %>%
 #  filter(!is.na(rank)) %>%
 #  summarise(count = n())
+
+
+
 
 
 # Manually verify data  ---------------------------------------------------
@@ -602,12 +562,6 @@ vdata <- vdata.0 %>%
   filter(!scientific_name %in% unique(toedit$scientific_name)) %>%
   bind_rows(toedit) %>%
   left_join(bc_key) # join the latest BC list / origin information
-
- # error check
- #sp.check <-  vdata %>%
-#   group_by(elcode) %>%
-#   summarise(count = n()) %>%
-#   filter(count > 1)
 
 
 # flag species which 2012 date does not match between data sets.
