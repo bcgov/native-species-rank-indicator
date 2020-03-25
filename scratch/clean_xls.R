@@ -375,7 +375,6 @@ missing.elcode.all <- all.wide %>%
   left_join(key) %>%
   select(scientific_name, elcode)
 
-
 all.wide  <- all.wide %>%
   left_join( missing.elcode.all, by = "scientific_name") %>%
   mutate(elcode = ifelse(is.na(elcode.x), elcode.y, elcode.x)) %>%
@@ -408,9 +407,9 @@ all.wide <- all.wide %>%
   startsWith(elcode, "AF")  ~ "Freshwater Fish",
   startsWith(elcode, "AM")  ~ "Mammals",
   startsWith(elcode, "AR")  ~ "Reptiles and Turtles",
-  TRUE ~ NA_character_))
+  TRUE ~ NA_character_)) %>%
+  mutate(comment = ifelse(is.na(elcode),"check elcode manually", comment))
 
-unique(all.wide.temp$taxonomic_group)
 
 # 3. merge rows with multiple rows due to hist and new data inconsistencies
 
@@ -422,19 +421,52 @@ multiple.rows <- all.wide %>%
   filter(n.rows > 1) %>%
   pull(scientific_name)
 
+# 246 species ( ~ 500 rows?)
 
 
 ## up to here
 
-msp.rows<- all.wide %>%
-  filter(scientific_name %in% )
+all.long <- all.wide %>%
+ # filter(scientific_name %in% )
   gather(.,  "1992", "1995","1997", "1998", "2001","2002" , "2003",
          "2005","2006", "2007", "2008", "2012",
          "2013" ,"2014" , "2015" , "2016", "2017" ,"2018", "2019",
          key = "year", value = "srank")
 
 
+sp.list <- as.list(unique(all.long$scientific_name))
 
+all.long.temp <- lapply(sp.list, function (x) {
+#  x <- sp.list[2]
+  sp.temp <- all.long %>%
+    filter(scientific_name == x)
+
+  if(length(sp.temp$year) == length(unique(sp.temp$year))) {
+
+    print(x)
+
+    sp.temp %>%
+      select(taxonomic_group, scientific_name,  elcode, year, comment, code,
+             comments, srank)
+
+  } else {
+
+   zz <-  sp.temp %>%
+      group_by(taxonomic_group, scientific_name, elcode, year) %>%
+      summarise(commment = as.character(max(comment, na.rm = TRUE)),
+                code = as.character(max(code, na.rm = TRUE)),
+                comments = as.character(max(comments, na.rm = TRUE)),
+                srank = as.character(max(srank, na.rm = TRUE))) %>%
+      mutate(code = as.numeric(code)) %>%
+      ungroup() #%>%
+      #select(taxonomic_group, scientific_name,  comment,   code,
+      #       comments, elcode, year, srank)
+
+
+  }
+})
+
+all.long.temp  <- do.call("rbind", all.long.temp)
 
 # add the changes data to
 
