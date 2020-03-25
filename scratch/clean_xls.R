@@ -33,6 +33,19 @@ hist.data <- hist.data %>%
   spread(Year, SRank) %>%
   rename_all(function(x) tolower(gsub("\\s+", "_", x)))
 
+
+# fix the fish names :
+
+hist.data <- hist.data %>%
+  mutate(scientific_name = ifelse(
+    scientific_name == "acipenser transmontanus - columbia river", "acipenser transmontanus pop. 2",
+    ifelse(scientific_name == "acipenser transmontanus - kootenay river", "acipenser transmontanus pop. 1",
+           ifelse(scientific_name == "acipenser transmontanus - lower fraser river"  ,  "acipenser transmontanus pop. 4",
+                  ifelse(scientific_name == "acipenser transmontanus - middle fraser river" , "acipenser transmontanus pop. 6",
+                         ifelse(scientific_name == "acipenser transmontanus - nechako river",  "acipenser transmontanus pop. 3",
+                                ifelse(scientific_name =="acipenser transmontanus - upper fraser river",  "acipenser transmontanus pop. 5",
+                                       scientific_name)))))))
+
 # Data set 2: read in the rank change data sheet
 
 change.data <- file.path("data",
@@ -455,15 +468,29 @@ all.wide <- all.long.temp %>%
 
 write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
+# to do:
 
 # now check if pre 2012 rank == post 2012 rank
 
+# manually check species with no elcodd
 
 
+acipenser transmontanus - columbia river	NA
+acipenser transmontanus - kootenay river	NA
+acipenser transmontanus - lower fraser river	NA
+acipenser transmontanus - middle fraser river	NA
+acipenser transmontanus - nechako river	NA
+acipenser transmontanus - upper fraser river	NA
+catostomus catostomus - chehalis lineage	NA
+coregonus sp. 1	NA
+lampetra richardsoni - morrison creek non-migratory parasitic form	NA
+lota lota - lower kootenay river population	NA
+oncorhynchus mykiss - coastal lineage	NA
+oncorhynchus mykiss- interior lineage	NA
+spirinchus thaleichthys - pygmy form from pitt and harrison lakes	NA
+thymallus arcticus-nahanni lineage	NA
+thymallus arcticus-northern beringean lineage	NA
 
-
-names(all.long.temp
-      )
 
 
 
