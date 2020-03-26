@@ -477,7 +477,7 @@ write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
 ## step 1: manually check species with no elcode
 
-#all.wide %>% filter(is.na(elcode))%>%
+# all.wide %>% filter(is.na(elcode))%>%
 #  select(scientific_name)
 
 ##Q: for CDC? For these species need to check with cdc on specifics
@@ -496,6 +496,10 @@ write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
 # flag species which 2012 date does not match between data sets.
 
+head(all.wide)
+
+
+all.wide <- all.wide %>%
 
 
 
