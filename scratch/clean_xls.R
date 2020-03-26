@@ -44,7 +44,12 @@ hist.data <- hist.data %>%
                   ifelse(scientific_name == "acipenser transmontanus - middle fraser river" , "acipenser transmontanus pop. 6",
                          ifelse(scientific_name == "acipenser transmontanus - nechako river",  "acipenser transmontanus pop. 3",
                                 ifelse(scientific_name =="acipenser transmontanus - upper fraser river",  "acipenser transmontanus pop. 5",
-                                       scientific_name)))))))
+                                       ifelse(scientific_name == "lampetra richardsoni - morrison creek non-migratory parasitic form",
+                                              "lampetra richardsoni pop. 1",
+        ifelse(scientific_name =="lota lota - lower kootenay river population", "lota lota pop. 1",
+        ifelse(scientific_name == "thymallus arcticus-nahanni lineage", "thymallus arcticus - nahanni lineage",
+        ifelse(scientific_name == "thymallus arcticus-northern beringean lineage", "thymallus arcticus - northern beringean lineage",
+                                       scientific_name)))))))))))
 
 # Data set 2: read in the rank change data sheet
 
@@ -465,43 +470,40 @@ all.wide <- all.long.temp %>%
   spread(year, srank)
 
 
-
 write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
+
 
 # to do:
 
-# now check if pre 2012 rank == post 2012 rank
+## step 1: manually check species with no elcode
 
-# manually check species with no elcodd
+#all.wide %>% filter(is.na(elcode))%>%
+#  select(scientific_name)
 
+##Q: for CDC? For these species need to check with cdc on specifics
 
-acipenser transmontanus - columbia river	NA
-acipenser transmontanus - kootenay river	NA
-acipenser transmontanus - lower fraser river	NA
-acipenser transmontanus - middle fraser river	NA
-acipenser transmontanus - nechako river	NA
-acipenser transmontanus - upper fraser river	NA
-catostomus catostomus - chehalis lineage	NA
-coregonus sp. 1	NA
-lampetra richardsoni - morrison creek non-migratory parasitic form	NA
-lota lota - lower kootenay river population	NA
-oncorhynchus mykiss - coastal lineage	NA
-oncorhynchus mykiss- interior lineage	NA
-spirinchus thaleichthys - pygmy form from pitt and harrison lakes	NA
-thymallus arcticus-nahanni lineage	NA
-thymallus arcticus-northern beringean lineage	NA
+#catostomus catostomus - chehalis lineage	NA # cant find this species in new data (listed as S1? in hist)
+#coregonus sp. 1	NA #(SX) only included in ranking up to 2009 : no elcode in large data table.
+#oncorhynchus mykiss - coastal lineage	NA  # these dont appear in large data sheet
+#oncorhynchus mykiss- interior lineage	NA
+#spirinchus thaleichthys - pygmy form from pitt and harrison lakes	NA # does not occur in new data (not sp. 1 as only assessed after 2010)
+
+## is Thymallus arcticus - Southern Beringean lineage the same as Thymallus arcticus - Northern Beringean lineage ??
 
 
 
-
-
-
-
-
-
+# Step 2:  now check if pre 2012 rank == post 2012 rank
 
 # flag species which 2012 date does not match between data sets.
-# with the new
+
+
+
+
+
+
+
+# Step 3: check species which changed between 2014 - 2018 to see if need to retro rank back to 1992?
+
 
 all <- all %>%
   select(taxonomic_group, scientific_name, common_name, ELCODE,
