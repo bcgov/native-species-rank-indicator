@@ -499,11 +499,53 @@ write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 head(all.wide)
 
 
-all.wide <- all.wide %>%
+# check which sp have all NAs and the srank at the most recent time reviewed
+
+sps <-sp.list[1]
+
+pre_2012_rank <- all.wide %>%
+  filter(scientific_name == sps) %>%
+  select(`1992`, `1995`,`1997`,`1998`, `2001`,`2002`, `2003`,`2006`,`2007`,`2008`,`2012`) %>%
+  gather(key = "year", value = "srank") %>%
+  filter(!is.na(srank)) %>%
+  filter(year == max(as.numeric(year)))
+
+ifelse(length(pre_2012$year))
+
+
+  mutate(scientific_name = unlist(sps))
+
+
+max(pre_2012_rank$year)
 
 
 
 
+str_locate()
+
+
+all.wide.temp <- all.wide %>%
+  mutate(upto2012 = ifelse(!is.na(`2012`), `2012`,
+                           ifelse(!is.na(`2008`), `2008`,
+                                  ifelse(!is.na(`2007`),`2007`,
+                                         ifelse(!is.na(`2006`), `2006`,
+   select(`1992`, `1995`,`1997`)                                                            ifelse(!is.na(`2005`), `2005`,
+                                                       ifelse(!is.na(`2003`),`2003`, `2002`)))))))
+
+
+all.wide.temp %>% filter(is.na(upto2012))
+
+
+
+                           [7] "1992"            "1995"            "1997"
+                           [10] "1998"            "2001"            "2002"
+                           [13] "2003"            "2005"            "2006"
+                           [16] "2007"            "2008"            "2012"
+                           [19] "2013"            "2014"            "2015"
+                           [22] "2016"            "2017"            "2018"
+                           [25] "2019"
+
+all.wide.temp %>% filter(is.na(upto2012))
 
 
 # Step 3: check species which changed between 2014 - 2018 to see if need to retro rank back to 1992?
