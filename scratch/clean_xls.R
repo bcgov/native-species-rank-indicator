@@ -35,21 +35,22 @@ hist.data <- hist.data %>%
 
 
 # fix the fish names :
-
 hist.data <- hist.data %>%
-  mutate(scientific_name = ifelse(
-    scientific_name == "acipenser transmontanus - columbia river", "acipenser transmontanus pop. 2",
-    ifelse(scientific_name == "acipenser transmontanus - kootenay river", "acipenser transmontanus pop. 1",
-           ifelse(scientific_name == "acipenser transmontanus - lower fraser river"  ,  "acipenser transmontanus pop. 4",
-                  ifelse(scientific_name == "acipenser transmontanus - middle fraser river" , "acipenser transmontanus pop. 6",
-                         ifelse(scientific_name == "acipenser transmontanus - nechako river",  "acipenser transmontanus pop. 3",
-                                ifelse(scientific_name =="acipenser transmontanus - upper fraser river",  "acipenser transmontanus pop. 5",
-                                       ifelse(scientific_name == "lampetra richardsoni - morrison creek non-migratory parasitic form",
-                                              "lampetra richardsoni pop. 1",
-        ifelse(scientific_name =="lota lota - lower kootenay river population", "lota lota pop. 1",
-        ifelse(scientific_name == "thymallus arcticus-nahanni lineage", "thymallus arcticus - nahanni lineage",
-        ifelse(scientific_name == "thymallus arcticus-northern beringean lineage", "thymallus arcticus - northern beringean lineage",
-                                       scientific_name)))))))))))
+  mutate(scientific_name = case_when(
+    scientific_name == "acipenser transmontanus - columbia river" ~ "acipenser transmontanus pop. 2",
+    scientific_name == "acipenser transmontanus - kootenay river" ~ "acipenser transmontanus pop. 1",
+    scientific_name == "acipenser transmontanus - lower fraser river" ~ "acipenser transmontanus pop. 4",
+    scientific_name == "acipenser transmontanus - middle fraser river" ~ "acipenser transmontanus pop. 6",
+    scientific_name == "acipenser transmontanus - nechako river" ~ "acipenser transmontanus pop. 3",
+    scientific_name == "acipenser transmontanus - upper fraser river" ~ "acipenser transmontanus pop. 5",
+    scientific_name == "lampetra richardsoni - morrison creek non-migratory parasitic form" ~ "lampetra richardsoni pop. 1",
+    scientific_name == "lota lota - lower kootenay river population" ~ "lota lota pop. 1",
+    scientific_name == "thymallus arcticus-nahanni lineage" ~ "thymallus arcticus - nahanni lineage",
+    scientific_name == "thymallus arcticus-northern beringean lineage" ~ "thymallus arcticus - northern beringean lineage",
+    TRUE ~ scientific_name
+  )
+  )
+
 
 # Data set 2: read in the rank change data sheet
 
