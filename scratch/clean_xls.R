@@ -13,14 +13,13 @@
 library(bcgovr)
 library(readxl)
 library(cellranger) # letter_to_num
-library(dplyr)
 library(tidyr)
 library(envreportutils)
 library(stringr)
 library(lubridate)
 library(readr)
 library(readxl)
-
+library(dplyr)
 source("R/lookup_elcode.R")
 
 # Data set 1: read in data set already formatted (1992 - 2012)
@@ -503,7 +502,7 @@ head(all.wide)
 
 rank_check <- lapply(sp.list, function(sps) {
 
- # sps <- sp.list[4]
+  #sps <- sp.list[10]
 
   pre_2012_rank <- all.wide %>%
     filter(scientific_name == sps) %>%
@@ -521,10 +520,12 @@ rank_check <- lapply(sp.list, function(sps) {
       filter(scientific_name == sps) %>%
       select(`2013`, `2014`, `2015`, `2016`, `2017`, `2018`, `2019`) %>%
       gather(key = "year", value = "srank") %>%
-      filter(!is.na(srank)) %>%
-      filter(year == min(as.numeric(year)))
+      filter(!is.na(srank))
+    #  filter(year == min(as.numeric(year)))
 
-    out <- bind_rows(pre_2012_rank, post_2012_rank)
+    out <- bind_rows(pre_2012_rank, post_2012_rank) %>%
+      mutate(srank = sub("B", "", srank)) %>% # remove differences by "Breeding prefix"
+      mutate(srank = sub(", SNRN", "", srank))
 
     if(length(unique(out$srank)) > 1) {
 
@@ -538,36 +539,26 @@ rank_check <- lapply(sp.list, function(sps) {
 sp.to.check <- do.call("rbind", rank_check)
 
 
+#write.csv(sp.to.check, file.path("data","sp.check.2012.ranks.csv"))
 
 
+# add change data
+
+change.code <- cdata.0 %>%
+  select(scientific_name, prev_srank, new_rank, code, reason_desc, comments) %>%
+  drop_na()
 
 
+xx <- sp.to.check %>%
+  left_join(change.code )
 
-str_locate()
+write.csv(xx, file.path("data","sp.check.2012.ranks_change.csv"))
 
-
-all.wide.temp <- all.wide %>%
-  mutate(upto2012 = ifelse(!is.na(`2012`), `2012`,
-                           ifelse(!is.na(`2008`), `2008`,
-                                  ifelse(!is.na(`2007`),`2007`,
-                                         ifelse(!is.na(`2006`), `2006`,
-   select(`1992`, `1995`,`1997`)                                                            ifelse(!is.na(`2005`), `2005`,
-                                                       ifelse(!is.na(`2003`),`2003`, `2002`)))))))
+unique(xx$scientific_name)
 
 
-all.wide.temp %>% filter(is.na(upto2012))
+## UP TO HERE
 
-
-
-                           [7] "1992"            "1995"            "1997"
-                           [10] "1998"            "2001"            "2002"
-                           [13] "2003"            "2005"            "2006"
-                           [16] "2007"            "2008"            "2012"
-                           [19] "2013"            "2014"            "2015"
-                           [22] "2016"            "2017"            "2018"
-                           [25] "2019"
-
-all.wide.temp %>% filter(is.na(upto2012))
 
 
 # Step 3: check species which changed between 2014 - 2018 to see if need to retro rank back to 1992?
