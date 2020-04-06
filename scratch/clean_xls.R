@@ -480,7 +480,7 @@ write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 # all.wide %>% filter(is.na(elcode))%>%
 #  select(scientific_name)
 
-##Q: for CDC? For these species need to check with cdc on specifics
+## Q: for CDC? For these species need to check with cdc on specifics
 
 #catostomus catostomus - chehalis lineage	NA # cant find this species in new data (listed as S1? in hist)
 #coregonus sp. 1	NA #(SX) only included in ranking up to 2009 : no elcode in large data table.
@@ -501,22 +501,44 @@ head(all.wide)
 
 # check which sp have all NAs and the srank at the most recent time reviewed
 
-sps <-sp.list[1]
+rank_check <- lapply(sp.list, function(sps) {
 
-pre_2012_rank <- all.wide %>%
-  filter(scientific_name == sps) %>%
-  select(`1992`, `1995`,`1997`,`1998`, `2001`,`2002`, `2003`,`2006`,`2007`,`2008`,`2012`) %>%
-  gather(key = "year", value = "srank") %>%
-  filter(!is.na(srank)) %>%
-  filter(year == max(as.numeric(year)))
+ # sps <- sp.list[4]
 
-ifelse(length(pre_2012$year))
+  pre_2012_rank <- all.wide %>%
+    filter(scientific_name == sps) %>%
+    select(`1992`, `1995`,`1997`,`1998`, `2001`,`2002`, `2003`,`2006`,`2007`,`2008`,`2012`) %>%
+    gather(key = "year", value = "srank") %>%
+    filter(!is.na(srank)) %>%
+    filter(year == max(as.numeric(year)))
+  # if table is blank then no rank before 2012
+
+  # if there was a rank before 2012 check the post 2012 rank and compare
+
+  if(length(pre_2012_rank$year) > 0) {
+
+    post_2012_rank <- all.wide %>%
+      filter(scientific_name == sps) %>%
+      select(`2013`, `2014`, `2015`, `2016`, `2017`, `2018`, `2019`) %>%
+      gather(key = "year", value = "srank") %>%
+      filter(!is.na(srank)) %>%
+      filter(year == min(as.numeric(year)))
+
+    out <- bind_rows(pre_2012_rank, post_2012_rank)
+
+    if(length(unique(out$srank)) > 1) {
+
+     out %>%
+        mutate(scientific_name = sps)
+    }
+  }
+
+})
+
+sp.to.check <- do.call("rbind", rank_check)
 
 
-  mutate(scientific_name = unlist(sps))
 
-
-max(pre_2012_rank$year)
 
 
 
