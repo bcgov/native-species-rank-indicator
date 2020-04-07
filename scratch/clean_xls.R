@@ -525,7 +525,8 @@ rank_check <- lapply(sp.list, function(sps) {
 
     out <- bind_rows(pre_2012_rank, post_2012_rank) %>%
       mutate(srank = sub("B", "", srank)) %>% # remove differences by "Breeding prefix"
-      mutate(srank = sub(", SNRN", "", srank))
+      mutate(srank = sub(", SNRN", "", srank)) %>%
+      mutate(srank = sub(", SUN", "", srank))
 
     if(length(unique(out$srank)) > 1) {
 
@@ -548,16 +549,46 @@ change.code <- cdata.0 %>%
   select(scientific_name, prev_srank, new_rank, code, reason_desc, comments) %>%
   drop_na()
 
-
-xx <- sp.to.check %>%
+sp.with.change <- sp.to.check %>%
   left_join(change.code )
 
-write.csv(xx, file.path("data","sp.check.2012.ranks_change.csv"))
+    #write.csv(sp.with.change, file.path("data","sp.check.2012.ranks_change.csv"))
 
-unique(xx$scientific_name)
+## remove species with real changes
+
+sp.ids <- as.list(unique(xx$scientific_name))
+
+sp.with.real.change <- lapply(sp.ids, function (sp){
+
+#sp <- sp.ids[[3]]
+  code_to_skip  <- xx %>%
+    filter(scientific_name == sp ) %>%
+    dplyr::select(code) %>%
+    distinct() %>%
+    pull
+
+  # get species with all change code = 1 or 2
+ if(length(code_to_skip) == 1 & code_to_skip %in% c(1, 2 )){
+   sp
+ }
+
+})
+
+sp.with.real.change <- as.vector(as.character(plyr::compact(sp.with.real.change)))
+
+
+sp.with.change = sp.with.change %>%
+filter(scientific_name %in% setdiff(sp.with.change$scientific_name, sp.with.real.change))
+
+
+
+
+
 
 
 ## UP TO HERE
+
+
 
 
 
