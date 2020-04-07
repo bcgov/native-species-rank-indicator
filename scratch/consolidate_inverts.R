@@ -33,7 +33,7 @@ inverts_all <- lapply(invert.files, function(file){
                    '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016',
                    '2017', '2018'))
 
-  # check both old and adjusted column and merge together then
+  # check both old and adjusted column and get adjusted if updated.
 
   longout <- lapply(yrs, function(y){
     yr = y
@@ -65,24 +65,4 @@ invert_final <- do.call("bind_rows", inverts_all)
 
 
 write.csv(invert_final, file.path("data", "inverts_consolidated.csv"))
-
-
-
-
-
-
-
-
-
-
-
-# Data set 1: read in data set already formatted (1992 - 2012)
-
-hist.data  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
-
-hist.data <- hist.data %>%
-  mutate(Scientific_Name = tolower(Scientific_Name)) %>%
-  select(-Common_Name) %>%
-  spread(Year, SRank) %>%
-  rename_all(function(x) tolower(gsub("\\s+", "_", x)))
 
