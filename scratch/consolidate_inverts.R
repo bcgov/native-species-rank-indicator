@@ -22,79 +22,57 @@ source("R/lookup_elcode.R")
 
 
 # read in data files
-invert.files <- list.files(file.path("data", "Inverts", "Completed"), pattern = "_final.xlsx", full.names = TRUE)
+invert.files <- as.list(list.files(file.path("data", "Inverts", "Completed"),
+                                   pattern = "_final.xlsx", full.names = TRUE))
 
-invert.files
+inverts_all <- lapply(invert.files, function(file){
 
-idata <- read_xlsx(invert.files[1], na = "NA")
+  idata <- read_xlsx(file, na = "NA")
 
-yrs <- c('1995', '1999', '2001', '2004', '2005', '2006', '2007', '2008',
-        '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016',
-        '2017', '2018')
+  yrs <- as.list(c('1995', '1999', '2000', '2001', '2004', '2005', '2006', '2007', '2008',
+                   '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016',
+                   '2017', '2018'))
 
-yrs_adjust <- str_c(yrs, "_Adj_SRank")
+  # check both old and adjusted column and merge together then
 
-ycols <- c(yrs, yrs_adjust)
+  longout <- lapply(yrs, function(y){
+    yr = y
+    yr_adj = paste0(yr, "_Adj_SRank")
 
-#unique(idata$`1995`)
+    if(yr %in% names(idata)) {
 
+    out <- idata %>%
+      mutate(final = ifelse(is.na( !!sym(yr_adj)), !!sym(yr),!!sym(yr_adj))) %>%
+      dplyr::select(final)
 
-idata <- idata %>%
-  dplyr::select(ELCODE, scientific_name, common_name, other_scientifi_names,
-           taxonomic_group, all_of(ycols))
-
-combo_yrs <- function(df, yr) {
-
-  df <- idata
-  yr <- '1995'
-
-  yr_adj = paste0(yr, "_Adj_SRank")
-
-
-  xx<- df %>%
-     mutate(final = ifelse(is.na( !!sym(yr_adj)), !!sym(yr),!!sym(yr_adj))) %>%
-    dplyr::select(yr, yr_adj, final)
-
-  xx %>%
-    rename(!!sym(yr) == final)
+    names(out) = yr
+    out
+    }
+  })
 
 
-}
-
-x <- idata %>%
- mutate(`1995c` = ifelse(is.na(`1995_Adj_SRank`), `1995`, `1995_Adj_SRank`)) %>%
+  out <- do.call("cbind", plyr::compact(longout))
 
 
+  out_full <- idata %>%
+    dplyr::select( ELCODE, scientific_name, common_name, taxonomic_group) %>%
+    bind_cols(out)
+
+})
 
 
-  dplyr::select(`1995`, `1995_Adj_SRank`, `1995c`)
+invert_final <- do.call("bind_rows", inverts_all)
+
+
+write.csv(invert_final, file.path("data", "inverts_consolidated.csv"))
 
 
 
 
-%>%
-  filter(is.na(srank))
 
 
 
-  group_by(ElCODE, scientific_name, common_name, other_scientifi_names,
-           taxonomic_group, year) %>%
-  summarise
 
-
-ilong <- idata %>%
-  gather(., all_of(ycols), key = "year", value = "srank") %>%
-  filter(!is.na(srank))
-
-i.long
-
-
-
-ilong
-idata
-change.data <- file.path("data",
-                         "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.csv"
-)
 
 
 
