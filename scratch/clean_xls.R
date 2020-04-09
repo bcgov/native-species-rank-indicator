@@ -568,7 +568,7 @@ sp.with.real.change <- lapply(sp.ids, function (sp){
     pull
 
   # get species with all change code = 1 or 2
- if(length(code_to_skip) == 1 & code_to_skip %in% c(1, 2 )){
+ if(length(code_to_skip) == 1 & code_to_skip %in% c(1,2,3 )){
    sp
  }
 
@@ -576,25 +576,127 @@ sp.with.real.change <- lapply(sp.ids, function (sp){
 
 sp.with.real.change <- as.vector(as.character(plyr::compact(sp.with.real.change)))
 
+# review the species with changes:
+
+# remove the species who has real change in rank
 
 sp.with.change = sp.with.change %>%
-filter(scientific_name %in% setdiff(sp.with.change$scientific_name, sp.with.real.change))
+  filter(scientific_name %in% setdiff(sp.with.change$scientific_name, sp.with.real.change))
 
+
+# compare the change species list with the list previously reviewed by Leah
+# cross check the species and for those Leah already provided comment update the all.wide table
+
+sp.previously.reviewed <- read_csv(file.path ("data", "SOI_2019_review_GP.csv"))
+names(sp.previously.reviewed) = c("taxonomic_group", "elcode", "scientific_name",
+                                  "last_rank", "current_srank", "proposed.action",
+                                  "leah.s.comments", "date.change", "prev_srank",
+                                  "new_rank" ,  "code", "reason_desc", "comments",
+                                  "1992", "1995" , "1997", "1998", "2001",  "2002",
+                                  "2003", "2005", "2006",  "2007" ,"2008", "2010",
+                                  "2011", "2012", "2012.y", "2013", "x2014",
+                                  "2015" ,"2016" ,"2017", "2018", "2019" )
+
+# cross reference the names in the review list with with previously reviewed species
+
+prev.reviewed.sp <- unique(sp.previously.reviewed$scientific_name)
+
+reviewed.sp.to.update.main.table <- sp.with.change %>%
+  filter(scientific_name %in% prev.reviewed.sp) %>%
+  select(scientific_name) %>%
+  distinct() %>%
+  pull()
+
+species.for.Lea <- c("progne subis", "acipenser medirostris", "coregonus nasus",
+                     "lampetra ayresii", "rhinichthys osculus")
+
+
+reviewed.sp.to.update.main.table <- setdiff(reviewed.sp.to.update.main.table, species.for.Lea)
+
+# format previously checked table to match wide table
+sp.to.update <- sp.previously.reviewed %>%
+  dplyr::filter(scientific_name %in% reviewed.sp.to.update.main.table) %>%
+  select(-c(proposed.action, last_rank, current_srank,
+            date.change, prev_srank, new_rank, `2012.y`)) %>%
+  rename(coment = reason_desc)
+
+# filter out species to be updated and add previously reviewed data.
+all.wide <- all.wide %>%
+  filter(!scientific_name %in% reviewed.sp.to.update.main.table) %>%
+  bind_rows(sp.to.update)
+
+write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
+
+
+# generate a table for Lea to review
+
+names(all.wide)
 
 #write.csv(sp.with.change, file.path("data","sp.check.2012.ranks_change.csv"))
 
+#sp.with.change.yrs <- sp.with.change %>%
+#  left_join(all.wide)
 
-sp.with.change.yrs <- sp.with.change %>%
-  left_join(all.wide)
+#write.csv(sp.with.change.yrs, file.path("data","sp.check.retro.ranks.csv"))
 
 
 # read in the previously reviewed species data by Leah and add
 # her reviewed data to the wide version.
 
 
-sp.previously.reviewed <- read.csv(file.path ("data", "SOI_2019_review_GP.csv"))
 
-%>%
+species.for.Lea <- c("progne subis", "acipenser medirostris", "coregonus nasus",
+                     "lampetra ayresii", "rhinichthys osculus")
+
+
+
+
+
+
+
+not.reviewed.sp <- sp.with.change.yrs %>%
+  filter(!scientific_name %in% prev.reviewed.sp)
+
+
+unique(sp.with.change.yrs$scientific_name) %in% reviewed.sp
+
+
+
+# add these to the wide data format!
+
+
+
+
+
+                                   [1] "year"            "srank"           "scientific_name"
+                                   [4] "prev_srank"      "new_rank"        "code"
+                                   [7] "reason_desc"     "comments"        "taxonomic_group"
+                                   [10] "elcode"          "comment"         "1992"
+                                   [13] "1995"            "1997"            "1998"
+                                   [16] "2001"            "2002"            "2003"
+                                   [19] "2005"            "2006"            "2007"
+                                   [22] "2008"            "2012"            "2013"
+                                   [25] "2014"            "2015"            "2016"
+                                   [28] "2017"            "2018"            "2019"
+
+
+                                   ) %>%
+  rename_all(tolower)
+
+
+
+prev.reviewed.sp <- unique(sp.previously.reviewed$scientific_name)
+
+reviewed.sp <- sp.with.change.yrs %>%
+  filter()
+
+unique(sp.with.change.yrs$scientific_name) %in% reviewed.sp
+
+
+
+
+
+       %>%
   select(-c(last_rank, current_SRANK, `Proposed ACTION`, `Leah's comments`, `Date change`,
             PREV_SRANK, NEW_RANK, CODE, REASON_DESC, COMMENTS)) %>%
   rename_all(function(x) tolower(gsub("\\s+", "_", x)))
