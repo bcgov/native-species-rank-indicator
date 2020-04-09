@@ -469,7 +469,7 @@ all.wide <- all.long.temp %>%
   spread(year, srank)
 
 
-write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
+#write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
 
 # to do:
@@ -581,8 +581,26 @@ sp.with.change = sp.with.change %>%
 filter(scientific_name %in% setdiff(sp.with.change$scientific_name, sp.with.real.change))
 
 
+#write.csv(sp.with.change, file.path("data","sp.check.2012.ranks_change.csv"))
 
 
+sp.with.change.yrs <- sp.with.change %>%
+  left_join(all.wide)
+
+
+# read in the previously reviewed species data by Leah and add
+# her reviewed data to the wide version.
+
+
+sp.previously.reviewed <- read.csv(file.path ("data", "SOI_2019_review_GP.csv"))
+
+%>%
+  select(-c(last_rank, current_SRANK, `Proposed ACTION`, `Leah's comments`, `Date change`,
+            PREV_SRANK, NEW_RANK, CODE, REASON_DESC, COMMENTS)) %>%
+  rename_all(function(x) tolower(gsub("\\s+", "_", x)))
+
+
+write.csv(sp.with.change.yrs, file.path("data","sp.check.retro.ranks.csv"))
 
 
 
@@ -591,34 +609,11 @@ filter(scientific_name %in% setdiff(sp.with.change$scientific_name, sp.with.real
 
 
 
-
 # Step 3: check species which changed between 2014 - 2018 to see if need to retro rank back to 1992?
 
 
-all <- all %>%
-  select(taxonomic_group, scientific_name, common_name, ELCODE,
-         "1992", "1995","1997", "1998", "2001","2002" , "2003",
-         "2004", "2005.y", "2005.x",  "2006.x", "2006.y", "2007.x","2007.y"  ,
-         "2008.x", "2008.y",  "2009" , "2010" , "2011" , "2012.x", "2012.y" ,
-          "2013" ,"2014" , "2015" , "2016", "2017"  ,"2018")
-
-all  <- all %>%
-  mutate(Update_2012_data = ifelse(`2012.y` ==`2012.x`, 0, 1),
-         Update_2005_data = ifelse(`2005.y` ==`2005.x`, 0, 1),
-         Update_2006_data = ifelse(`2006.y` ==`2006.x`, 0, 1),
-         Update_2007_data = ifelse(`2007.y` ==`2007.x`, 0, 1),
-         Update_2008_data = ifelse(`2008.y` ==`2008.x`, 0, 1),
-         )
 
 
-
-#write.csv(all, file.path("data", "consolidated_output.csv"), row.names = FALSE)
-
-# check groups
-#new <- all %>%
-#  group_by(taxonomic_group, prov_status_review_date) %>%
-#  filter(!is.na(rank)) %>%
-#  summarise(count = n())
 
 
 
