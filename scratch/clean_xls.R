@@ -625,28 +625,21 @@ all.wide <- all.wide %>%
   filter(!scientific_name %in% reviewed.sp.to.update.main.table) %>%
   bind_rows(sp.to.update)
 
+
 write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
-
 # generate a table for Lea to review
+table.for.lea <-  sp.with.change  %>%
+ filter(!scientific_name %in% reviewed.sp.to.update.main.table) %>%
+  left_join(all.wide, by = c("scientific_name")) %>%
+  dplyr::select(-c(year, srank, comment)) %>%
+  distinct()
 
-names(all.wide)
-
-#write.csv(sp.with.change, file.path("data","sp.check.2012.ranks_change.csv"))
-
-#sp.with.change.yrs <- sp.with.change %>%
-#  left_join(all.wide)
-
-#write.csv(sp.with.change.yrs, file.path("data","sp.check.retro.ranks.csv"))
+write.csv(table.for.lea , file.path("data","table_for_lea.csv"))
 
 
-# read in the previously reviewed species data by Leah and add
-# her reviewed data to the wide version.
-
-
-
-species.for.Lea <- c("progne subis", "acipenser medirostris", "coregonus nasus",
-                     "lampetra ayresii", "rhinichthys osculus")
+# manually reviewed this table and added a proposed action for Lea to review.
+# will need to read this back in, edit and then update the all.wide table.
 
 
 
@@ -654,66 +647,13 @@ species.for.Lea <- c("progne subis", "acipenser medirostris", "coregonus nasus",
 
 
 
-not.reviewed.sp <- sp.with.change.yrs %>%
-  filter(!scientific_name %in% prev.reviewed.sp)
-
-
-unique(sp.with.change.yrs$scientific_name) %in% reviewed.sp
-
-
-
-# add these to the wide data format!
 
 
 
 
 
-                                   [1] "year"            "srank"           "scientific_name"
-                                   [4] "prev_srank"      "new_rank"        "code"
-                                   [7] "reason_desc"     "comments"        "taxonomic_group"
-                                   [10] "elcode"          "comment"         "1992"
-                                   [13] "1995"            "1997"            "1998"
-                                   [16] "2001"            "2002"            "2003"
-                                   [19] "2005"            "2006"            "2007"
-                                   [22] "2008"            "2012"            "2013"
-                                   [25] "2014"            "2015"            "2016"
-                                   [28] "2017"            "2018"            "2019"
 
-
-                                   ) %>%
-  rename_all(tolower)
-
-
-
-prev.reviewed.sp <- unique(sp.previously.reviewed$scientific_name)
-
-reviewed.sp <- sp.with.change.yrs %>%
-  filter()
-
-unique(sp.with.change.yrs$scientific_name) %in% reviewed.sp
-
-
-
-
-
-       %>%
-  select(-c(last_rank, current_SRANK, `Proposed ACTION`, `Leah's comments`, `Date change`,
-            PREV_SRANK, NEW_RANK, CODE, REASON_DESC, COMMENTS)) %>%
-  rename_all(function(x) tolower(gsub("\\s+", "_", x)))
-
-
-write.csv(sp.with.change.yrs, file.path("data","sp.check.retro.ranks.csv"))
-
-
-
-## UP TO HERE
-
-
-
-
-# Step 3: check species which changed between 2014 - 2018 to see if need to retro rank back to 1992?
-
-
+## old stuff - from here down
 
 
 
@@ -888,7 +828,7 @@ unmatch_sp <- bind_rows(mammals, reptiles, amphibians, ff, bb)
 longsp <- unmatch_sp %>%
     left_join(., vdata.0)
 
-write.csv(longsp, file.path("data", "sp_subsp_check.csv"))
+#write.csv(longsp, file.path("data", "sp_subsp_check.csv"))
 
 
 
