@@ -52,7 +52,7 @@ hist.data <- hist.data %>%
 
 # Data set 2: read in the rank change data sheet
 
-change.data <- file.path("data",
+change.data <- file.path("data","raw",
                       "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.csv"
 )
 
@@ -150,7 +150,7 @@ out <- do.call("rbind", out) %>%
 
 # # Data set 3: latest data catalogue from CDC (2012 - 2018) ------------------------------------------------------------
 
-new.data <- file.path(("data"),
+new.data <- file.path("data","raw",
                        "BCSEE_Plants_Animals_final.csv"
 )
 
@@ -180,7 +180,7 @@ new.0 <- read_csv(new.data,
          prov_status_review_date = year(prov_status_review_date),
          prov_status_change_date = year(prov_status_change_date))
 
-if (!file.exists("data/tax_key_vert_full.csv")) {
+if (!file.exists("data/raw/tax_key_vert_full.csv")) {
 
   # create a key with all historic ELcode, names, scinema , Taxanomic
   full_key <- new.0 %>%
@@ -217,11 +217,11 @@ if (!file.exists("data/tax_key_vert_full.csv")) {
     distinct() %>%
     mutate(scientific_name = tolower(scientific_name))
 
-  write_csv(key, "data/tax_key_vert_full.csv")
+  write_csv(key, "data/raw/tax_key_vert_full.csv")
 
 } else {
 
-  key <- read_csv("data/tax_key_vert_full.csv") %>%
+  key <- read_csv("data/raw/tax_key_vert_full.csv") %>%
     rename_all(function(x) tolower(x))
 
 }
@@ -469,7 +469,7 @@ all.wide <- all.long.temp %>%
   spread(year, srank)
 
 
-#write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
+#write.csv(all.wide, file.path("data", "raw", sp.check.temp.wide.csv"))
 
 
 # to do:
@@ -494,9 +494,6 @@ all.wide <- all.long.temp %>%
 # Step 2:  now check if pre 2012 rank == post 2012 rank
 
 # flag species which 2012 date does not match between data sets.
-
-head(all.wide)
-
 
 # check which sp have all NAs and the srank at the most recent time reviewed
 
@@ -540,9 +537,6 @@ rank_check <- lapply(sp.list, function(sps) {
 sp.to.check <- do.call("rbind", rank_check)
 
 
-#write.csv(sp.to.check, file.path("data","sp.check.2012.ranks.csv"))
-
-
 # add change data
 
 change.code <- cdata.0 %>%
@@ -552,7 +546,7 @@ change.code <- cdata.0 %>%
 sp.with.change <- sp.to.check %>%
   left_join(change.code )
 
-    #write.csv(sp.with.change, file.path("data","sp.check.2012.ranks_change.csv"))
+    #write.csv(sp.with.change, file.path("data","raw","sp.check.2012.ranks_change.csv"))
 
 ## remove species with real changes
 
@@ -587,7 +581,7 @@ sp.with.change = sp.with.change %>%
 # compare the change species list with the list previously reviewed by Leah
 # cross check the species and for those Leah already provided comment update the all.wide table
 
-sp.previously.reviewed <- read_csv(file.path ("data", "SOI_2019_review_GP.csv"))
+sp.previously.reviewed <- read_csv(file.path ("data", "raw", "SOI_2019_review_GP.csv"))
 names(sp.previously.reviewed) = c("taxonomic_group", "elcode", "scientific_name",
                                   "last_rank", "current_srank", "proposed.action",
                                   "leah.s.comments", "date.change", "prev_srank",
@@ -626,7 +620,7 @@ all.wide <- all.wide %>%
   bind_rows(sp.to.update)
 
 
-write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
+#write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
 # generate a table for Lea to review
 table.for.lea <-  sp.with.change  %>%
@@ -635,7 +629,7 @@ table.for.lea <-  sp.with.change  %>%
   dplyr::select(-c(year, srank, comment)) %>%
   distinct()
 
-write.csv(table.for.lea , file.path("data","table_for_lea.csv"))
+write.csv(table.for.lea , file.path("data","raw","table_for_lea.csv"))
 
 
 # manually reviewed this table and added a proposed action for Lea to review.
