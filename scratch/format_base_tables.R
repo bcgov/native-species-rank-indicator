@@ -37,7 +37,7 @@ source("R/lookup_elcode.R")
 #  "BCSEE_Plants_Animals_final.csv"
 # )
 
-hist.data <- file.path(("data"),
+hist.data <- file.path("data", "raw",
   "BCSEE_Plants_Animals_final.csv"
 )
 
@@ -72,7 +72,7 @@ write_csv(inv, file.path(output_dirs, "BCSEE_inverts.csv"))
 
 
 
-if (!file.exists("data/tax_key_full.csv")) {
+if (!file.exists("data/raw/tax_key_full.csv")) {
 
   # create a key with all historic ELcode, names, scinema , Taxanomic
   full_key <- ref.0 %>%
@@ -112,10 +112,10 @@ if (!file.exists("data/tax_key_full.csv")) {
     select(-year)
 
   write_csv(key, "data/tax_key_full.csv")
-  write_csv(latest_key, "data/tax_key_latest.csv")
+  write_csv(latest_key, "data/raw/tax_key_latest.csv")
 } else {
   key <- read_csv("data/tax_key_full.csv")
-  latest_key <- read_csv("data/tax_key_latest.csv")
+  latest_key <- read_csv("data/raw/tax_key_latest.csv")
 }
 
 ref <- ref.0 %>%
@@ -216,7 +216,7 @@ for (i in seq_along(group.oi)) {
 # create a data set for each group with change reasons
 
 # or read Git local version
-excel_file <- file.path("data",
+excel_file <- file.path("data","raw",
                         "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.xlsx")
 
 sdata <- read_excel(excel_file, sheet = "Query Output",
