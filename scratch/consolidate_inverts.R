@@ -63,6 +63,14 @@ inverts_all <- lapply(invert.files, function(file){
 
 invert_final <- do.call("bind_rows", inverts_all)
 
+# convert to long format
 
-write.csv(invert_final, file.path("data", "inverts_consolidated.csv"))
+library(tidyr)
+
+inverts <- gather(invert_final, key = year, value = SRank,
+                  -ELCODE, -scientific_name, -common_name, -taxonomic_group) %>%
+rename_all(.funs = tolower)
+
+
+write.csv(inverts, file.path("data", "inverts_consolidated.csv"), row.names = FALSE)
 
