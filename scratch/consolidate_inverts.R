@@ -63,6 +63,81 @@ inverts_all <- lapply(invert.files, function(file){
 
 invert_final <- do.call("bind_rows", inverts_all)
 
+
+# check names with the provincial list
+
+prov_list <- read_csv(file.path("data","raw",
+                                "BCSEE_Plants_Animals_final.csv"),
+                      col_types = cols_only(
+                        Year = col_integer(),
+                        `Scientific Name` = col_character(),
+                        `English Name` = col_character(),
+                        `Element Code` = col_character(),
+                        `Name Category` = col_character(),
+                        `BC List` = col_character(),
+                        `Origin` = col_character()
+                      )
+) %>%
+  rename_all(function(x) tolower(gsub("\\s+", "_", x))) %>%
+  filter(!name_category %in% c("Vascular Plant", "Non-Vascular Plant",
+                               "Nonvascular Plant", "Fungus",
+                               "International Vegetation Classification")) %>%
+  mutate(scientific_name = tolower(scientific_name)) %>%
+  group_by(scientific_name) %>%
+  filter(year == max(year)) %>%
+  ungroup() %>%
+  select(-c(year, english_name, name_category))
+
+
+# add the provinical listing and check any species that dont match
+
+indata <- invert_final %>%
+  left_join(prov_list, by = "scientific_name")
+
+no.list = indata %>%
+  filter(is.na(bc_list))
+
+# add original comments from review :
+
+leps <- read_xlsx(invert.files[[1]], na = "NA") %>%
+  select(ELCODE, scientific_name,common_name, other_scientifi_names,
+          Comments) %>%
+  filter(scientific_name %in% no.list$scientific_name)
+
+mols <- read_xlsx(invert.files[[2]], na = "NA") %>%
+  select(ELCODE, scientific_name,common_name, scientific_name_long,
+         Comments) %>%
+  rename(other_scientifi_names = scientific_name_long) %>%
+  filter(scientific_name %in% no.list$scientific_name)
+
+comments = bind_rows(leps, mols)
+
+no.list.coms <- no.list %>%
+  left_join(comments, by = c("scientific_name", "common_name", "ELCODE")) %>%
+  select(-c("taxonomic_group.y", "element_code")) %>%
+  select(ELCODE, scientific_name, other_scientifi_names, common_name,
+         taxonomic_group.x, Comments, everything())
+
+# export data for lea to check
+
+
+
+write.csv(no.list.coms , file.path("data", "raw","manual_checks","inverts_tax_check.csv"), row.names = FALSE)
+
+
+
+
+
+
+
+
+# fix individual species with invalide taxonomy
+
+
+#invert_to_remove <- c("clossiana titania", "agriades rusticus")
+
+
+
 # convert to long format
 
 library(tidyr)
