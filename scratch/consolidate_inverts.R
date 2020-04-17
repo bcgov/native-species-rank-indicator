@@ -88,16 +88,16 @@ prov_list <- read_csv(file.path("data","raw",
   ungroup() %>%
   select(-c(year, english_name, name_category))
 
-
-# add the provinical listing and check any species that dont match
+# add the provinical listing information
 
 indata <- invert_final %>%
   left_join(prov_list, by = "scientific_name")
 
+
+# check species with non-matching provincial listings
+
 no.list = indata %>%
   filter(is.na(bc_list))
-
-# add original comments from review :
 
 leps <- read_xlsx(invert.files[[1]], na = "NA") %>%
   select(ELCODE, scientific_name,common_name, other_scientifi_names,
