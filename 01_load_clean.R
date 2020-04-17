@@ -28,11 +28,7 @@ indata <- read_csv(file.path("data", "inverts_consolidated.csv"))
 
 
 
-provincial_listing <-
-  new.data <- file.path("data","raw",
-                        "BCSEE_Plants_Animals_final.csv")
-
-  new.0 <- read_csv(file.path("data","raw",
+prov_list <- read_csv(file.path("data","raw",
                               "BCSEE_Plants_Animals_final.csv"),
                     col_types = cols_only(
                       Year = col_integer(),
@@ -48,14 +44,20 @@ provincial_listing <-
     filter(!name_category %in% c("Vascular Plant", "Non-Vascular Plant",
                                  "Nonvascular Plant", "Fungus",
                                  "International Vegetation Classification")) %>%
+    mutate(scientific_name = tolower(scientific_name)) %>%
     group_by(scientific_name) %>%
     filter(year == max(year)) %>%
     ungroup() %>%
     select(-c(year, english_name, name_category))
 
 
+# add provincial listing
+
 indata <- indata %>%
-  left_join()
+  left_join(prov_list, by = "scientific_name")
+
+no.list = indata %>%
+  filter(is.na(bc_list))
 
 
 
