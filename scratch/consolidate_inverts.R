@@ -119,13 +119,7 @@ no.list.coms <- no.list %>%
          taxonomic_group.x, Comments, everything())
 
 # export data for lea to check
-
-
-
 write.csv(no.list.coms , file.path("data", "raw","manual_checks","inverts_tax_check.csv"), row.names = FALSE)
-
-
-
 
 
 
@@ -133,9 +127,11 @@ write.csv(no.list.coms , file.path("data", "raw","manual_checks","inverts_tax_ch
 
 # fix individual species with invalide taxonomy
 
-
 #invert_to_remove <- c("clossiana titania", "agriades rusticus")
 
+
+
+indata
 
 
 # convert to long format
@@ -143,7 +139,7 @@ write.csv(no.list.coms , file.path("data", "raw","manual_checks","inverts_tax_ch
 library(tidyr)
 
 inverts <- gather(invert_final, key = year, value = SRank,
-                  -ELCODE, -scientific_name, -common_name, -taxonomic_group) %>%
+                  -ELCODE, -scientific_name, -common_name, -taxonomic_group, -bc_list, -origin) %>%
 rename_all(.funs = tolower)
 
 
