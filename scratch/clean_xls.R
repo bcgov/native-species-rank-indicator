@@ -476,18 +476,74 @@ all.wide <- all.long.temp %>%
 
 ## step 1: manually check species with no elcode
 
-# all.wide %>% filter(is.na(elcode))%>%
-#  select(scientific_name)
+ all.wide %>% filter(is.na(elcode))%>%
+  select(scientific_name)
 
 ## Q: for CDC? For these species need to check with cdc on specifics
 
-#catostomus catostomus - chehalis lineage	NA # cant find this species in new data (listed as S1? in hist)
-#coregonus sp. 1	NA #(SX) only included in ranking up to 2009 : no elcode in large data table.
-#oncorhynchus mykiss - coastal lineage	NA  # these dont appear in large data sheet
-#oncorhynchus mykiss- interior lineage	NA
+
+# 1) catostomus catostomus - chehalis lineage	NA # cant find this species in new data (listed as S1? in hist)
+
+      # LGelling - This must have been split up by lineage historically, we don’t have this in Biotics and I can’t find any paper trail.  I have asked Debbie for details.
+      # Debbie W: “I can’t find any record of this record. It’s not in the deleted schema either so if we did track it, it may have been prior to 2003.”
+
+      # Action - remove from analysis
+
+
+# 2) coregonus sp. 1	NA #(SX) only included in ranking up to 2009 : no elcode in large data table.
+
+
+      # LGelling : Extinct, but why not in biotics?  I assume a taxonomic change – I’ve asked Debbie.
+      #	DW: “It was deleted on January 15, 2010. I don’t have any other information as I have not been able to access my really old e-mail (>5 years old) for some time now.”
+      #	http://www.env.gov.bc.ca/wld/documents/ss03fraser1.pdf
+
+      # Action - remove , extinct species ignored and species currently not in biotics with no elcode
+
+# 3) #oncorhynchus mykiss - coastal lineage	NA  # these dont appear in large data sheet
+     #oncorhynchus mykiss- interior lineage	NA
+
+    # G Perkins: Should I update all years to SNR ? How many lineages are there? I currently see these:
+    # Should the coastal and interior be lumped in with either of these
+
+    # Lea Gelling:  I now remember that I was going to sort all steelhead last year, but
+              #it was really confusing, so I post-poned (except pop 47 and 46) .
+              # I believe what is happening is that COSEWIC is establishing DUs,
+              # pop 46/47 (Chilcotin/Thompson) were evaluated based on emergency
+              # listing  (by COSEWIC).  I was able to use the COSEWIC report data
+              # to establish the S rank for the two pops.
+              #As for the other ones, I believe what I need to do is figure out the
+              # same question you asked – are the large lake/interior/coastal elements
+              # going to be new DUs, based on COSEWIC DUs?
+              # I will ask Greg Wilson about where this is at and get back to you.
+
+    # ACTION : STILL WAITING ON CONFIRMATION
+
+
 #spirinchus thaleichthys - pygmy form from pitt and harrison lakes	NA # does not occur in new data (not sp. 1 as only assessed after 2010)
 
+     # L Gelling: NatureServe Explorer says: Nonanadromous populations in Harrison and Pit lakes, British Columbia, have been recognized as an undescribed species (Spirinchus sp 1) by some authors. In Biotics we have Spirinchus sp 1; “Pygmy longfin Smelt”.
+      # Action : Update historic data to Spirinchus sp 1; “Pygmy longfin Smelt”.
+
+
+
 ## is Thymallus arcticus - Southern Beringean lineage the same as Thymallus arcticus - Northern Beringean lineage ??
+
+sp.to.remove <-  c("catostomus catostomus - chehalis lineage", "coregonus sp. 1")
+
+
+all.wide <- all.wide %>%
+   filter(!scientific_name %in% sp.to.remove)
+
+
+all.wide
+
+
+
+
+   "spirinchus thaleichthys - pygmy form from pitt and harrison lakes"
+   update to "spirinchus sp. 1"  elcode = "AFCHB03030"
+
+
 
 
 
@@ -620,7 +676,6 @@ all.wide <- all.wide %>%
   bind_rows(sp.to.update)
 
 
-#write.csv(all.wide, file.path("data","sp.check.temp.wide.csv"))
 
 # generate a table for Lea to review
 table.for.lea <-  sp.with.change  %>%
