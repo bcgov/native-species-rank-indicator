@@ -529,14 +529,53 @@ all.wide <- all.long.temp %>%
 ## is Thymallus arcticus - Southern Beringean lineage the same as Thymallus arcticus - Northern Beringean lineage ??
 
 sp.to.remove <-  c("catostomus catostomus - chehalis lineage", "coregonus sp. 1")
-
+sp.to.rename <- "spirinchus thaleichthys - pygmy form from pitt and harrison lakes"
 
 all.wide <- all.wide %>%
    filter(!scientific_name %in% sp.to.remove)
 
+# check
+all.wide %>% filter(is.na(elcode))%>%
+  select(scientific_name)
 
 all.wide
 
+spirinchus <- all.wide %>%
+  filter(scientific_name %in% c("spirinchus thaleichthys - pygmy form from pitt and harrison lakes",
+                                "spirinchus sp. 1")) %>%
+  mutate(scientific_name = ifelse(
+    scientific_name == "spirinchus thaleichthys - pygmy form from pitt and harrison lakes",
+    "spirinchus sp. 1", scientific_name))
+
+
+# STILL NEED TO FIX THIS BIT
+
+spirinchus.years <- spirinchus %>%
+  gather(.,  "1992", "1995","1997", "1998", "2001","2002" , "2003",
+         "2005","2006", "2007", "2008", "2012",
+         "2013" ,"2014" , "2015" , "2016", "2017" ,"2018", "2019",
+         key = "year", value = "srank") %>%
+  dplyr:::select(-c(taxonomic_group, scientific_name, elcode, comment, code, comments)) %>%
+  group_by(year) %>%
+  summarise(srank = max(srank))
+
+
+spirinchus.years
+
+
+spirinchus[-(1:3)] <- lapply(spirinchus[-(1:3)], na.omit)
+cbind(spirinchus[1], mycol = do.call(pmax, c(data[-1], na.rm = TRUE)))
+
+
+
+xx <- all.wide %>%
+  mutate(scientific_name = ifelse(
+    scientific_name == "spirinchus thaleichthys - pygmy form from pitt and harrison lakes",
+                                  "spirinchus sp. 1", scientific_name))
+
+# check
+xx %>% filter(is.na(elcode))%>%
+  select(scientific_name)
 
 
 
