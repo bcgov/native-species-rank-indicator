@@ -114,9 +114,9 @@ comments = bind_rows(leps, mols)
 
 no.list.coms <- no.list %>%
   left_join(comments, by = c("scientific_name", "common_name", "ELCODE")) %>%
-  select(-c("taxonomic_group.y", "element_code")) %>%
+  select(-"element_code") %>%
   select(ELCODE, scientific_name, other_scientifi_names, common_name,
-         taxonomic_group.x, Comments, everything())
+         taxonomic_group, Comments, everything())
 
 # export data for lea to check
 write.csv(no.list.coms , file.path("data", "raw","manual_checks","inverts_tax_check.csv"), row.names = FALSE)
@@ -143,5 +143,5 @@ inverts <- gather(invert_final, key = year, value = SRank,
 rename_all(.funs = tolower)
 
 
-write.csv(inverts, file.path("data", "inverts_consolidated.csv"), row.names = FALSE)
+write.csv(inverts, file.path("data", "inverts_retroranks.csv"), row.names = FALSE)
 
