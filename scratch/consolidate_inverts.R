@@ -137,7 +137,10 @@ indata <- invert_final %>%
 
 
 
-indata
+indata <- invert_final %>%
+        left_join(prov_list, by = "scientific_name")
+
+
 
 
 # convert to long format for export to BC data catalogue
@@ -149,7 +152,9 @@ inverts <-pivot_longer(indata, cols = -c(taxonomic_group, scientific_name, commo
                names_to = "year", values_to = "srank") %>%
   rename_all(.funs = tolower) %>%
   select(elcode, taxonomic_group, scientific_name, common_name,
-         bc_list, origin, year, srank)
+         bc_list, origin, year, srank) %>%
+  mutate(bc_list = tolower(bc_list))
+
 
 
 write.csv(inverts, file.path("data", "inverts_retroranks.csv"), row.names = FALSE)
