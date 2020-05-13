@@ -141,10 +141,12 @@ indata
 
 
 # convert to long format for export to BC data catalogue
+indata <- indata %>%
+  select(-c("element_code", english_name))
 
-inverts <- gather(indata, key = year, value = SRank,
-                  -ELCODE, -scientific_name, -common_name,
-                  -taxonomic_group, -bc_list, -origin) %>%
+# comvert to long
+inverts <-pivot_longer(indata, cols = -c(taxonomic_group, scientific_name, common_name, bc_list, origin, ELCODE),
+               names_to = "year", values_to = "srank") %>%
   rename_all(.funs = tolower) %>%
   select(elcode, taxonomic_group, scientific_name, common_name,
          bc_list, origin, year, srank)
