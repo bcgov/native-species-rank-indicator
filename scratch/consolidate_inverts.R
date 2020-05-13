@@ -13,7 +13,7 @@
 
 # import and consolidate invertebrte data:
 
-
+library(tidyr)
 library(readxl)
 library(dplyr)
 library(stringr)
@@ -94,34 +94,43 @@ indata <- invert_final %>%
   left_join(prov_list, by = "scientific_name")
 
 
-# check species with non-matching provincial listings
-
-no.list = indata %>%
-  filter(is.na(bc_list))
-
-leps <- read_xlsx(invert.files[[1]], na = "NA") %>%
-  select(ELCODE, scientific_name,common_name, other_scientifi_names,
-          Comments) %>%
-  filter(scientific_name %in% no.list$scientific_name)
-
-mols <- read_xlsx(invert.files[[2]], na = "NA") %>%
-  select(ELCODE, scientific_name,common_name, scientific_name_long,
-         Comments) %>%
-  rename(other_scientifi_names = scientific_name_long) %>%
-  filter(scientific_name %in% no.list$scientific_name)
-
-comments = bind_rows(leps, mols)
-
-no.list.coms <- no.list %>%
-  left_join(comments, by = c("scientific_name", "common_name", "ELCODE")) %>%
-  select(-"element_code") %>%
-  select(ELCODE, scientific_name, other_scientifi_names, common_name,
-         taxonomic_group, Comments, everything())
-
-# export data for lea to check
-write.csv(no.list.coms , file.path("data", "raw","manual_checks","inverts_tax_check.csv"), row.names = FALSE)
 
 
+
+
+
+      # check species with non-matching provincial listings and export a list for CDC to check
+
+      no.list = indata %>%
+        filter(is.na(bc_list))
+
+      leps <- read_xlsx(invert.files[[1]], na = "NA") %>%
+        select(ELCODE, scientific_name,common_name, other_scientifi_names,
+                Comments) %>%
+        filter(scientific_name %in% no.list$scientific_name)
+
+      mols <- read_xlsx(invert.files[[2]], na = "NA") %>%
+        select(ELCODE, scientific_name,common_name, scientific_name_long,
+               Comments) %>%
+        rename(other_scientifi_names = scientific_name_long) %>%
+        filter(scientific_name %in% no.list$scientific_name)
+
+      comments = bind_rows(leps, mols)
+
+      no.list.coms <- no.list %>%
+        left_join(comments, by = c("scientific_name", "common_name", "ELCODE")) %>%
+        select(-"element_code") %>%
+        select(ELCODE, scientific_name, other_scientifi_names, common_name,
+               taxonomic_group, Comments, everything())
+
+      # export data for lea to check
+      write.csv(no.list.coms , file.path("data", "raw","manual_checks","inverts_tax_check.csv"), row.names = FALSE)
+
+
+
+
+
+## Still to do !!!
 
 
 
@@ -134,13 +143,14 @@ write.csv(no.list.coms , file.path("data", "raw","manual_checks","inverts_tax_ch
 indata
 
 
-# convert to long format
+# convert to long format for export to BC data catalogue
 
-library(tidyr)
-
-inverts <- gather(invert_final, key = year, value = SRank,
-                  -ELCODE, -scientific_name, -common_name, -taxonomic_group, -bc_list, -origin) %>%
-rename_all(.funs = tolower)
+inverts <- gather(indata, key = year, value = SRank,
+                  -ELCODE, -scientific_name, -common_name,
+                  -taxonomic_group, -bc_list, -origin) %>%
+  rename_all(.funs = tolower) %>%
+  select(elcode, taxonomic_group, scientific_name, common_name,
+         bc_list, origin, year, srank)
 
 
 write.csv(inverts, file.path("data", "inverts_retroranks.csv"), row.names = FALSE)
