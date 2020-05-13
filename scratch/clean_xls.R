@@ -830,7 +830,8 @@ all.long <- all.long.prov %>%
 all.long <- all.long %>%
   rename(common_name = english_name) %>%
   select(elcode, taxonomic_group, scientific_name, common_name,
-         bc_list, origin, year, srank)
+         bc_list, origin, year, srank) %>%
+  mutate(bc_list = tolower(bc_list))
 
 
 
