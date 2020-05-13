@@ -511,18 +511,9 @@ all.long.temp <- all.long.temp %>%
 
     # ACTION : Include the lineages:
 
-
-# STILL TO DO: GP - need to chase up the elcodes
-
-
-sort(unique(all.long.temp$scientific_name))
-
-#all.long.temp <- all.long.temp %>%
-#  mutate(elcode = ifelse(scientific_name == "oncorhynchus mykiss - coastal lineage", "CODE",
-#                         ifelse(scientific_name == "oncorhynchus mykiss - interior lineage", "CODE", elcode)))
-#
-# ACTION " STILL NEED TO FIND elcodes for these
-
+all.long.temp <- all.long.temp %>%
+  mutate(elcode = ifelse(scientific_name == "oncorhynchus mykiss - coastal lineage", "AFCHA0213E",
+                         ifelse(scientific_name == "oncorhynchus mykiss- interior lineage", "AFCHA0213D", elcode)))
 
 
 # 3) spirinchus thaleichthys - pygmy form from pitt and harrison lakes	NA # does not occur in new data (not sp. 1 as only assessed after 2010)
@@ -543,15 +534,17 @@ all.long.temp <- all.long.temp %>%
      # L Gelling: We added arctic grayling in 2012 – this is from the archived 2012 changes spreadsheet.
                 # I can’t figure out when it was in there as northern, but it must be a mistake.
 
-    #Action: update the hiostoric name to Thymallus arcticus - Northern Beringean lineage
+    #Action: update the historic name to Thymallus arcticus - Souuthern Beringean lineage
+
+all.long.temp <- all.long.temp %>%
+  mutate(scientific_name = ifelse(scientific_name == "thymallus arcticus - northern beringean lineage",
+                                  "thymallus arcticus - southern beringean lineage", scientific_name),
+      elcode = ifelse(scientific_name == "thymallus arcticus - southern beringean lineage", "AFCHB03030", elcode))
 
 
 # check nas
-unique(all.long.temp  %>% filter(is.na(elcode))%>%
-  select(scientific_name))
-
-## STILL TO DO : ADD ELCODES FOR thymallus arcticus - northern beringean lineage
-
+#unique(all.long.temp  %>% filter(is.na(elcode))%>%
+#  select(scientific_name))
 
 
  ## convert back to wide format
@@ -561,150 +554,147 @@ all.wide <- all.long.temp %>%
 
 
 
+        # Step 2:  now check if pre 2012 rank == post 2012 rank
+
+        # flag species which 2012 date does not match between data sets.
+
+        # check which sp have all NAs and the srank at the most recent time reviewed
+
+        rank_check <- lapply(sp.list, function(sps) {
+
+          #sps <- sp.list[10]
+
+          pre_2012_rank <- all.wide %>%
+            filter(scientific_name == sps) %>%
+            select(`1992`, `1995`,`1997`,`1998`, `2001`,`2002`, `2003`,`2006`,`2007`,`2008`,`2012`) %>%
+            gather(key = "year", value = "srank") %>%
+            filter(!is.na(srank)) %>%
+            filter(year == max(as.numeric(year)))
+          # if table is blank then no rank before 2012
+
+          # if there was a rank before 2012 check the post 2012 rank and compare
+
+          if(length(pre_2012_rank$year) > 0) {
+
+            post_2012_rank <- all.wide %>%
+              filter(scientific_name == sps) %>%
+              select(`2013`, `2014`, `2015`, `2016`, `2017`, `2018`, `2019`) %>%
+              gather(key = "year", value = "srank") %>%
+              filter(!is.na(srank))
+            #  filter(year == min(as.numeric(year)))
+
+            out <- bind_rows(pre_2012_rank, post_2012_rank) %>%
+              mutate(srank = sub("B", "", srank)) %>% # remove differences by "Breeding prefix"
+              mutate(srank = sub(", SNRN", "", srank)) %>%
+              mutate(srank = sub(", SUN", "", srank))
+
+            if(length(unique(out$srank)) > 1) {
+
+             out %>%
+                mutate(scientific_name = sps)
+            }
+          }
+
+        })
+
+        sp.to.check <- do.call("rbind", rank_check)
 
 
+        # add change data information
 
-# Step 2:  now check if pre 2012 rank == post 2012 rank
+        change.code <- cdata.0 %>%
+          select(scientific_name, prev_srank, new_rank, code, reason_desc, comments) %>%
+          drop_na()
 
-# flag species which 2012 date does not match between data sets.
+        sp.with.change <- sp.to.check %>%
+          left_join(change.code )
 
-# check which sp have all NAs and the srank at the most recent time reviewed
+            #write.csv(sp.with.change, file.path("data","raw","sp.check.2012.ranks_change.csv"))
 
-rank_check <- lapply(sp.list, function(sps) {
+        ## remove species with real changes
 
-  #sps <- sp.list[10]
+        sp.ids <- as.list(unique(xx$scientific_name))
 
-  pre_2012_rank <- all.wide %>%
-    filter(scientific_name == sps) %>%
-    select(`1992`, `1995`,`1997`,`1998`, `2001`,`2002`, `2003`,`2006`,`2007`,`2008`,`2012`) %>%
-    gather(key = "year", value = "srank") %>%
-    filter(!is.na(srank)) %>%
-    filter(year == max(as.numeric(year)))
-  # if table is blank then no rank before 2012
+        sp.with.real.change <- lapply(sp.ids, function (sp){
 
-  # if there was a rank before 2012 check the post 2012 rank and compare
+        #sp <- sp.ids[[3]]
+          code_to_skip  <- xx %>%
+            filter(scientific_name == sp ) %>%
+            dplyr::select(code) %>%
+            distinct() %>%
+            pull
 
-  if(length(pre_2012_rank$year) > 0) {
+          # get species with all change code = 1 or 2
+         if(length(code_to_skip) == 1 & code_to_skip %in% c(1,2,3 )){
+           sp
+         }
 
-    post_2012_rank <- all.wide %>%
-      filter(scientific_name == sps) %>%
-      select(`2013`, `2014`, `2015`, `2016`, `2017`, `2018`, `2019`) %>%
-      gather(key = "year", value = "srank") %>%
-      filter(!is.na(srank))
-    #  filter(year == min(as.numeric(year)))
+        })
 
-    out <- bind_rows(pre_2012_rank, post_2012_rank) %>%
-      mutate(srank = sub("B", "", srank)) %>% # remove differences by "Breeding prefix"
-      mutate(srank = sub(", SNRN", "", srank)) %>%
-      mutate(srank = sub(", SUN", "", srank))
+        sp.with.real.change <- as.vector(as.character(plyr::compact(sp.with.real.change)))
 
-    if(length(unique(out$srank)) > 1) {
+        # review the species with changes:
 
-     out %>%
-        mutate(scientific_name = sps)
-    }
-  }
+        # remove the species who has real change in rank
 
-})
-
-sp.to.check <- do.call("rbind", rank_check)
+        sp.with.change = sp.with.change %>%
+          filter(scientific_name %in% setdiff(sp.with.change$scientific_name, sp.with.real.change))
 
 
-# add change data information
+        # compare the change species list with the list previously reviewed by Leah
+        # cross check the species and for those Leah already provided comment update the all.wide table
 
-change.code <- cdata.0 %>%
-  select(scientific_name, prev_srank, new_rank, code, reason_desc, comments) %>%
-  drop_na()
+        sp.previously.reviewed <- read_csv(file.path ("data", "raw", "SOI_2019_review_GP.csv"))
+        names(sp.previously.reviewed) = c("taxonomic_group", "elcode", "scientific_name",
+                                          "last_rank", "current_srank", "proposed.action",
+                                          "leah.s.comments", "date.change", "prev_srank",
+                                          "new_rank" ,  "code", "reason_desc", "comments",
+                                          "1992", "1995" , "1997", "1998", "2001",  "2002",
+                                          "2003", "2005", "2006",  "2007" ,"2008", "2010",
+                                          "2011", "2012", "2012.y", "2013", "x2014",
+                                          "2015" ,"2016" ,"2017", "2018", "2019" )
 
-sp.with.change <- sp.to.check %>%
-  left_join(change.code )
+        # cross reference the names in the review list with with previously reviewed species
 
-    #write.csv(sp.with.change, file.path("data","raw","sp.check.2012.ranks_change.csv"))
+        prev.reviewed.sp <- unique(sp.previously.reviewed$scientific_name)
 
-## remove species with real changes
+        reviewed.sp.to.update.main.table <- sp.with.change %>%
+          filter(scientific_name %in% prev.reviewed.sp) %>%
+          select(scientific_name) %>%
+          distinct() %>%
+          pull()
 
-sp.ids <- as.list(unique(xx$scientific_name))
-
-sp.with.real.change <- lapply(sp.ids, function (sp){
-
-#sp <- sp.ids[[3]]
-  code_to_skip  <- xx %>%
-    filter(scientific_name == sp ) %>%
-    dplyr::select(code) %>%
-    distinct() %>%
-    pull
-
-  # get species with all change code = 1 or 2
- if(length(code_to_skip) == 1 & code_to_skip %in% c(1,2,3 )){
-   sp
- }
-
-})
-
-sp.with.real.change <- as.vector(as.character(plyr::compact(sp.with.real.change)))
-
-# review the species with changes:
-
-# remove the species who has real change in rank
-
-sp.with.change = sp.with.change %>%
-  filter(scientific_name %in% setdiff(sp.with.change$scientific_name, sp.with.real.change))
+        species.for.Lea <- c("progne subis", "acipenser medirostris", "coregonus nasus",
+                             "lampetra ayresii", "rhinichthys osculus")
 
 
-# compare the change species list with the list previously reviewed by Leah
-# cross check the species and for those Leah already provided comment update the all.wide table
+        reviewed.sp.to.update.main.table <- setdiff(reviewed.sp.to.update.main.table, species.for.Lea)
 
-sp.previously.reviewed <- read_csv(file.path ("data", "raw", "SOI_2019_review_GP.csv"))
-names(sp.previously.reviewed) = c("taxonomic_group", "elcode", "scientific_name",
-                                  "last_rank", "current_srank", "proposed.action",
-                                  "leah.s.comments", "date.change", "prev_srank",
-                                  "new_rank" ,  "code", "reason_desc", "comments",
-                                  "1992", "1995" , "1997", "1998", "2001",  "2002",
-                                  "2003", "2005", "2006",  "2007" ,"2008", "2010",
-                                  "2011", "2012", "2012.y", "2013", "x2014",
-                                  "2015" ,"2016" ,"2017", "2018", "2019" )
+        # format previously checked table to match wide table
+        sp.to.update <- sp.previously.reviewed %>%
+          dplyr::filter(scientific_name %in% reviewed.sp.to.update.main.table) %>%
+          select(-c(proposed.action, last_rank, current_srank,
+                    date.change, prev_srank, new_rank, `2012.y`)) %>%
+          rename(coment = reason_desc)
 
-# cross reference the names in the review list with with previously reviewed species
-
-prev.reviewed.sp <- unique(sp.previously.reviewed$scientific_name)
-
-reviewed.sp.to.update.main.table <- sp.with.change %>%
-  filter(scientific_name %in% prev.reviewed.sp) %>%
-  select(scientific_name) %>%
-  distinct() %>%
-  pull()
-
-species.for.Lea <- c("progne subis", "acipenser medirostris", "coregonus nasus",
-                     "lampetra ayresii", "rhinichthys osculus")
+        # filter out species to be updated and add previously reviewed data.
+        #all.wide <- all.wide %>%
+        #  filter(!scientific_name %in% reviewed.sp.to.update.main.table) %>%
+        #  bind_rows(sp.to.update)
 
 
-reviewed.sp.to.update.main.table <- setdiff(reviewed.sp.to.update.main.table, species.for.Lea)
+        # generate a table for Lea to review
+        table.for.lea <-  sp.with.change  %>%
+         filter(!scientific_name %in% reviewed.sp.to.update.main.table) %>%
+          left_join(all.wide, by = c("scientific_name")) %>%
+          dplyr::select(-c(year, srank, comment)) %>%
+          distinct()
 
-# format previously checked table to match wide table
-sp.to.update <- sp.previously.reviewed %>%
-  dplyr::filter(scientific_name %in% reviewed.sp.to.update.main.table) %>%
-  select(-c(proposed.action, last_rank, current_srank,
-            date.change, prev_srank, new_rank, `2012.y`)) %>%
-  rename(coment = reason_desc)
-
-# filter out species to be updated and add previously reviewed data.
-#all.wide <- all.wide %>%
-#  filter(!scientific_name %in% reviewed.sp.to.update.main.table) %>%
-#  bind_rows(sp.to.update)
+        write.csv(table.for.lea , file.path("data","raw","table_for_lea.csv"))
 
 
-# generate a table for Lea to review
-table.for.lea <-  sp.with.change  %>%
- filter(!scientific_name %in% reviewed.sp.to.update.main.table) %>%
-  left_join(all.wide, by = c("scientific_name")) %>%
-  dplyr::select(-c(year, srank, comment)) %>%
-  distinct()
-
-write.csv(table.for.lea , file.path("data","raw","table_for_lea.csv"))
-
-
-# manually reviewed this table and added a proposed action for Lea to review.
-# will need to read this back in, edit and then update the all.wide table.
+        # manually reviewed this table and added a proposed action for Lea to review.
+        # will need to read this back in, edit and then update the all.wide table.
 
 
 
@@ -714,7 +704,7 @@ write.csv(table.for.lea , file.path("data","raw","table_for_lea.csv"))
 
 # read in table Lea has reviewed and formatted :
 
-updates <- read_excel(file.path("data","raw","manual_checks","2020May8_lea_edit.xlsx"),
+updates <- read_excel(file.path("data","raw","2020May8_lea_edit.xlsx"),
                       sheet = "updated_table_to_incorporate") %>%
   select(-c(`...1`, comments.x, comments.y, `propsed action`, `LG agreed`,
             `LG comments`,prev_srank, new_rank, code.x, reason_desc))
@@ -733,19 +723,122 @@ all.wide.final <- bind_rows(all.wide.keep, updates) %>%
   filter(!scientific_name == "myotis keenii")
 
 
-# tidy data for output
+
+# Final tidy for bcdata output --------------------------------------------
+
+
+# comvert to long
 all.long <- all.wide.final %>%
   pivot_longer(., cols = -c(taxonomic_group, scientific_name, elcode),
                names_to = "Year", values_to = "SRank")
 
+
+# add the provincial rankings and common names
+
+prov_list <- read_csv(file.path("data","raw",
+                                "BCSEE_Plants_Animals_final.csv"),
+                      col_types = cols_only(
+                        Year = col_integer(),
+                        `Scientific Name` = col_character(),
+                        `English Name` = col_character(),
+                        `Element Code` = col_character(),
+                        `Name Category` = col_character(),
+                        `BC List` = col_character(),
+                        `Origin` = col_character()
+                      )
+) %>%
+  rename_all(function(x) tolower(gsub("\\s+", "_", x))) %>%
+  filter(!name_category %in% c("Vascular Plant", "Non-Vascular Plant",
+                               "Nonvascular Plant", "Fungus",
+                               "International Vegetation Classification")) %>%
+  mutate(scientific_name = tolower(scientific_name)) %>%
+  group_by(scientific_name) %>%
+  filter(year == max(year)) %>%
+  ungroup() %>%
+  select(-c(year, name_category))
+
+
+
+
+# add provincial listing
+
+all.long.prov <- all.long%>%
+  left_join(prov_list, by = "scientific_name")
+
+no.list = all.long.prov %>%
+  filter(is.na(bc_list)) %>%
+  select(scientific_name) %>%
+  unique()
+
+#unique(all.long.prov$bc_list)
+
+# add prov list where missing
+
+bc_list_updates <- tribble(
+  ~scientific_name, ~ bc_list,
+    "couesius plumbeus pop. 2", "Red",
+    "melanitta deglandi", "Yellow",
+    "oncorhynchus nerka pop. 10", "No Status",
+    "oncorhynchus nerka pop. 11", "No Status",
+    "oncorhynchus nerka pop. 12", "No Status",
+    "oncorhynchus nerka pop. 13", "No Status",
+    "oncorhynchus nerka pop. 14", "No Status",
+    "oncorhynchus nerka pop. 15", "No Status",
+    "oncorhynchus nerka pop. 16", "No Status",
+    "oncorhynchus nerka pop. 17", "No Status",
+    "oncorhynchus nerka pop. 18", "No Status",
+    "oncorhynchus nerka pop. 19", "No Status",
+    "oncorhynchus nerka pop. 20", "No Status",
+    "oncorhynchus nerka pop. 21", "No Status",
+    "oncorhynchus nerka pop. 22", "No Status",
+    "oncorhynchus nerka pop. 23", "No Status",
+    "oncorhynchus nerka pop. 24", "No Status",
+    "oncorhynchus nerka pop. 25", "No Status",
+    "oncorhynchus nerka pop. 26", "No Status",
+    "oncorhynchus nerka pop. 27", "No Status",
+    "oncorhynchus nerka pop. 28", "No Status",
+    "oncorhynchus nerka pop. 29", "No Status",
+    "oncorhynchus nerka pop. 30", "No Status",
+    "oncorhynchus nerka pop. 31", "No Status",
+    "oncorhynchus nerka pop. 9", "No Status",
+    "prosopium coulterii pop. 1", "Blue",
+    "prosopium coulterii pop. 3", "Yellow",
+    "sorex obscurus", "Yellow",
+    "oncorhynchus mykiss- interior lineage", "No Status",
+    "oncorhynchus mykiss - coastal lineage", "No Status"
+  )
+
+all.long <- all.long.prov %>%
+  left_join(., bc_list_updates, by = "scientific_name") %>%
+  mutate(bc_list.x = ifelse(is.na(bc_list.x), bc_list.y, bc_list.x)) %>%
+  rename(bc_list = bc_list.x) %>%
+  select(-c(bc_list.y, element_code))
+
+## data checks
+#no.list = all.long %>%
+#  filter(is.na(bc_list)) %>%
+#  select(scientific_name) %>%
+#  unique()
+
+## check common names
+#no.name = all.long %>%
+#  filter(is.na(english_name)) %>%
+#  select(scientific_name) %>%
+#  unique()
+
+
 all.long <- all.long %>%
   rename(Taxonomic_group = taxonomic_group,
-         Scientific_name = scientific_name)
+         Scientific_name = scientific_name,
+         Common_name = english_name) %>%
+  select(elcode, Taxonomic_group, Scientific_name, Common_name,
+         bc_list, origin, Year, SRank)
 
 
-#write.csv(all.long, file.path("data","raw","manual_checks", "test.csv"))
+
+
 write.csv(all.long , file.path("data", "verts_retroranks.csv"), row.names = FALSE)
 
-saveRDS(all.long, file.path("data","indata.R"))
+#saveRDS(all.long, file.path("data","indata.R"))
 
 
