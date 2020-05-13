@@ -463,24 +463,9 @@ all.long.temp <- lapply(sp.list, function (x) {
 
 all.long.temp  <- do.call("rbind", all.long.temp)
 
-# convert back to wide format
 
-all.wide <- all.long.temp %>%
-  spread(year, srank)
-
-
-#write.csv(all.wide, file.path("data", "raw", sp.check.temp.wide.csv"))
-
-
-# to do:
-
-## step 1: manually check species with no elcode
-
- all.wide %>% filter(is.na(elcode))%>%
-  select(scientific_name)
-
-## Q: for CDC? For these species need to check with cdc on specifics
-
+## step 1: manually check species with no elcode and manually update following guidelines
+# from CDC (see below for details)
 
 # 1) catostomus catostomus - chehalis lineage	NA # cant find this species in new data (listed as S1? in hist)
 
@@ -499,6 +484,12 @@ all.wide <- all.long.temp %>%
 
       # Action - remove , extinct species ignored and species currently not in biotics with no elcode
 
+sp.to.remove <-  c("catostomus catostomus - chehalis lineage", "coregonus sp. 1")
+
+all.long.temp <- all.long.temp %>%
+  filter(!scientific_name %in% sp.to.remove)
+
+
 # 3) #oncorhynchus mykiss - coastal lineage	NA  # these dont appear in large data sheet
      #oncorhynchus mykiss- interior lineage	NA
 
@@ -516,71 +507,57 @@ all.wide <- all.long.temp %>%
               # going to be new DUs, based on COSEWIC DUs?
               # I will ask Greg Wilson about where this is at and get back to you.
 
-    # ACTION : STILL WAITING ON CONFIRMATION
+    # Lea Gelling : Yes include the lineages (April 23rd 2020)
+
+    # ACTION : Include the lineages:
 
 
-#spirinchus thaleichthys - pygmy form from pitt and harrison lakes	NA # does not occur in new data (not sp. 1 as only assessed after 2010)
+# STILL TO DO: GP - need to chase up the elcodes
+
+
+sort(unique(all.long.temp$scientific_name))
+
+#all.long.temp <- all.long.temp %>%
+#  mutate(elcode = ifelse(scientific_name == "oncorhynchus mykiss - coastal lineage", "CODE",
+#                         ifelse(scientific_name == "oncorhynchus mykiss - interior lineage", "CODE", elcode)))
+#
+# ACTION " STILL NEED TO FIND elcodes for these
+
+
+
+# 3) spirinchus thaleichthys - pygmy form from pitt and harrison lakes	NA # does not occur in new data (not sp. 1 as only assessed after 2010)
 
      # L Gelling: NatureServe Explorer says: Nonanadromous populations in Harrison and Pit lakes, British Columbia, have been recognized as an undescribed species (Spirinchus sp 1) by some authors. In Biotics we have Spirinchus sp 1; “Pygmy longfin Smelt”.
       # Action : Update historic data to Spirinchus sp 1; “Pygmy longfin Smelt”.
 
 
-
-## is Thymallus arcticus - Southern Beringean lineage the same as Thymallus arcticus - Northern Beringean lineage ??
-
-sp.to.remove <-  c("catostomus catostomus - chehalis lineage", "coregonus sp. 1")
-sp.to.rename <- "spirinchus thaleichthys - pygmy form from pitt and harrison lakes"
-
-all.wide <- all.wide %>%
-   filter(!scientific_name %in% sp.to.remove)
-
-# check
-all.wide %>% filter(is.na(elcode))%>%
-  select(scientific_name)
-
-all.wide
-
-spirinchus <- all.wide %>%
-  filter(scientific_name %in% c("spirinchus thaleichthys - pygmy form from pitt and harrison lakes",
-                                "spirinchus sp. 1")) %>%
-  mutate(scientific_name = ifelse(
-    scientific_name == "spirinchus thaleichthys - pygmy form from pitt and harrison lakes",
-    "spirinchus sp. 1", scientific_name))
+all.long.temp <- all.long.temp %>%
+  mutate(scientific_name = ifelse(scientific_name %in% c("spirinchus thaleichthys - pygmy form from pitt and harrison lakes",
+                                          "spirinchus sp. 1"), "spirinchus sp. 1", scientific_name)) %>%
+  mutate(elcode = ifelse(scientific_name == "spirinchus sp. 1", "AFCHB03030", elcode))
 
 
-# STILL NEED TO FIX THIS BIT
-
-spirinchus.years <- spirinchus %>%
-  gather(.,  "1992", "1995","1997", "1998", "2001","2002" , "2003",
-         "2005","2006", "2007", "2008", "2012",
-         "2013" ,"2014" , "2015" , "2016", "2017" ,"2018", "2019",
-         key = "year", value = "srank") %>%
-  dplyr:::select(-c(taxonomic_group, scientific_name, elcode, comment, code, comments)) %>%
-  group_by(year) %>%
-  summarise(srank = max(srank))
+## 4) Is Thymallus arcticus - Southern Beringean lineage the same as Thymallus arcticus - Northern Beringean lineage ??
 
 
-spirinchus.years
+     # L Gelling: We added arctic grayling in 2012 – this is from the archived 2012 changes spreadsheet.
+                # I can’t figure out when it was in there as northern, but it must be a mistake.
+
+    #Action: update the hiostoric name to Thymallus arcticus - Northern Beringean lineage
 
 
-spirinchus[-(1:3)] <- lapply(spirinchus[-(1:3)], na.omit)
-cbind(spirinchus[1], mycol = do.call(pmax, c(data[-1], na.rm = TRUE)))
+# check nas
+unique(all.long.temp  %>% filter(is.na(elcode))%>%
+  select(scientific_name))
+
+## STILL TO DO : ADD ELCODES FOR thymallus arcticus - northern beringean lineage
 
 
 
-xx <- all.wide %>%
-  mutate(scientific_name = ifelse(
-    scientific_name == "spirinchus thaleichthys - pygmy form from pitt and harrison lakes",
-                                  "spirinchus sp. 1", scientific_name))
+ ## convert back to wide format
+all.wide <- all.long.temp %>%
+  spread(year, srank)
 
-# check
-xx %>% filter(is.na(elcode))%>%
-  select(scientific_name)
-
-
-
-   "spirinchus thaleichthys - pygmy form from pitt and harrison lakes"
-   update to "spirinchus sp. 1"  elcode = "AFCHB03030"
 
 
 
@@ -632,7 +609,7 @@ rank_check <- lapply(sp.list, function(sps) {
 sp.to.check <- do.call("rbind", rank_check)
 
 
-# add change data
+# add change data information
 
 change.code <- cdata.0 %>%
   select(scientific_name, prev_srank, new_rank, code, reason_desc, comments) %>%
@@ -710,10 +687,9 @@ sp.to.update <- sp.previously.reviewed %>%
   rename(coment = reason_desc)
 
 # filter out species to be updated and add previously reviewed data.
-all.wide <- all.wide %>%
-  filter(!scientific_name %in% reviewed.sp.to.update.main.table) %>%
-  bind_rows(sp.to.update)
-
+#all.wide <- all.wide %>%
+#  filter(!scientific_name %in% reviewed.sp.to.update.main.table) %>%
+#  bind_rows(sp.to.update)
 
 
 # generate a table for Lea to review
@@ -728,6 +704,13 @@ write.csv(table.for.lea , file.path("data","raw","table_for_lea.csv"))
 
 # manually reviewed this table and added a proposed action for Lea to review.
 # will need to read this back in, edit and then update the all.wide table.
+
+
+
+
+
+
+
 
 
 
