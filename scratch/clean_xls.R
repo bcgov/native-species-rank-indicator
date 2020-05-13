@@ -743,9 +743,8 @@ all.long <- all.long %>%
          Scientific_name = scientific_name)
 
 
-
-write.csv(all.long, file.path("data","raw","manual_checks", "test.csv"))
-#write.csv(indata, file.path("data", "indata.csv"), row.names = FALSE)
+#write.csv(all.long, file.path("data","raw","manual_checks", "test.csv"))
+write.csv(all.long , file.path("data", "verts_retroranks.csv"), row.names = FALSE)
 
 saveRDS(all.long, file.path("data","indata.R"))
 
