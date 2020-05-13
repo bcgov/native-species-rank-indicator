@@ -836,9 +836,7 @@ all.long <- all.long %>%
 
 
 
-
 write.csv(all.long , file.path("data", "verts_retroranks.csv"), row.names = FALSE)
 
 #saveRDS(all.long, file.path("data","indata.R"))
-
 
