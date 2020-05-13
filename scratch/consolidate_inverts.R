@@ -95,11 +95,8 @@ indata <- invert_final %>%
 
 
 
-
-
-
-
-      # check species with non-matching provincial listings and export a list for CDC to check
+      # check species with non-matching provincial listings
+      # export a list for CDC to check:
 
       no.list = indata %>%
         filter(is.na(bc_list))
@@ -134,9 +131,9 @@ indata <- invert_final %>%
 
 
 
-# fix individual species with invalide taxonomy
+    # fix individual species with invalide taxonomy - waiting on CDC
 
-#invert_to_remove <- c("clossiana titania", "agriades rusticus")
+    #invert_to_remove <- c("clossiana titania", "agriades rusticus")
 
 
 
