@@ -563,6 +563,7 @@ all.wide <- all.long.temp %>%
 
 
 
+
 # Step 2:  now check if pre 2012 rank == post 2012 rank
 
 # flag species which 2012 date does not match between data sets.
@@ -711,201 +712,41 @@ write.csv(table.for.lea , file.path("data","raw","table_for_lea.csv"))
 
 
 
+# read in table Lea has reviewed and formatted :
+
+updates <- read_excel(file.path("data","raw","manual_checks","2020May8_lea_edit.xlsx"),
+                      sheet = "updated_table_to_incorporate") %>%
+  select(-c(`...1`, comments.x, comments.y, `propsed action`, `LG agreed`,
+            `LG comments`,prev_srank, new_rank, code.x, reason_desc))
+
+update.sp <- unique(updates$scientific_name)
+
+
+# remove old infomation about species
+all.wide.keep <- all.wide %>%
+  filter(!scientific_name %in% update.sp)
+
+# replace with manually edited updates
+all.wide.final <- bind_rows(all.wide.keep, updates) %>%
+  select(-c(comment, code, comments)) %>%
+  drop_na(., scientific_name) %>%
+  filter(!scientific_name == "myotis keenii")
+
+
+# tidy data for output
+all.long <- all.wide.final %>%
+  pivot_longer(., cols = -c(taxonomic_group, scientific_name, elcode),
+               names_to = "Year", values_to = "SRank")
+
+all.long <- all.long %>%
+  rename(Taxonomic_group = taxonomic_group,
+         Scientific_name = scientific_name)
 
 
 
-
-
-
-
-
-
-
-
-
-
-## old stuff - from here down
-
-
-
-
-
-
-
-# Manually verify data  ---------------------------------------------------
-
-# Currently manually vetted data is stored here: consolidated_output_edit.csv
-## NOTE THIS FILE HAS BEEN MANUALLY EDITED _ PLEASE DONT WRITE OVER
-# I used Species_manually_adjusted.csv to keep track of manual changes mades to the Species_to_check_manually.csv
-# This was mostly name changes and duplicates in common name subspecies (spacing / upper/lower)
-
-# Leah Ramsey reviewed species with non-matching codes.
-# Their review (SOE_2019_review.csv stored in the data folder).
-# --------------------------------------------------------------------------
-
-
-# Read in Leah's revisions and incorporated into the "consolidated_output_edit.csv" above.
-
-toedit <- read_csv(file.path("data", "SOI_2019_review_GP.csv")) %>%
-  select(-c(last_rank, current_SRANK, `Proposed ACTION`, `Leah's comments`, `Date change`,
-            PREV_SRANK, NEW_RANK, CODE, REASON_DESC, COMMENTS)) %>%
- rename_all(function(x) tolower(gsub("\\s+", "_", x)))
-
-
-vdata.0 <- file.path("data", "consolidated_output_edit.csv")
-
-vdata.0 <- read_csv(vdata.0,
-                  col_types = cols_only(
-                    `Taxonomic_Group` = col_character(),
-                    `Scientific_Name` = col_character(),
-                    `Common_name` = col_character(),
-                    `ELCODE` = col_character(),
-                    `1992` = col_character(),
-                    `1995` = col_character(),
-                    `1997` = col_character(),
-                    `1998` = col_character(),
-                    `2001` = col_character(),
-                    `2002` = col_character(),
-                    `2003` = col_character(),
-                    `2005` = col_character(),
-                    `2006` = col_character(),
-                    `2007` = col_character(),
-                    `2008` = col_character(),
-                    `2010` = col_character(),
-                    `2011` = col_character(),
-                    `2012.x` = col_character(),
-                    `2012.y`= col_character(),
-                    `2013` = col_character(),
-                    `2014` = col_character(),
-                    `2015` = col_character(),
-                    `2016` = col_character(),
-                    `2017` = col_character(),
-                    `2018` = col_character()
-                  )) %>%
-  rename_all(function(x) tolower(gsub("\\s+", "_", x)))
-
-
-vdata <- vdata.0 %>%
-  filter(!scientific_name %in% unique(toedit$scientific_name)) %>%
-  bind_rows(toedit) %>%
-  left_join(bc_key) # join the latest BC list / origin information
-
-
-# flag species which 2012 date does not match between data sets.
-vdata  <- vdata %>%
-  mutate(match2012 = ifelse(`2012.y` ==`2012.x`, 0, 1))
-
-#unmatched <- vdata%>%
-#  filter(vdata$match2012 == 1 ) %>%
-#  select(scientific_name, common_name, ELCODE,`2012.x`, `2012.y`)
-
-##checked individuals with unmatched ranking (need to adjust four species where sub populations are created)
- # "coturnicops noveboracensis" = 2012.x
- # "brachyramphus marmoratus"= 2012.x
- # "empidonax wrightii"= 2012.x
- # "salvelinus malma - southern lineage"= 2012.x ## NA - from 2004 - 2011
- # "salvelinus malma - northern lineage"= 2012.x ## NA - from 2004 - 2011
- # "hybognathus hankinsoni - western arctic group" = 2012.x ## NA - from 2004 - 2011
- # "hybognathus hankinsoni - pacific group" = 2012.x ## NA - from 2004 - 2011
- # "sander vitreus"= 2012.x
-
-vdata <- vdata %>%
-  select(-c(`2012.y`, match2012, ELCODE)) %>%   # remove the old 2012 data sets. (as confirmed above)
-  mutate(`2012` =`2012.x`) %>%
-  select(-`2012.x`) %>%
-  select(c(bc_list, origin, everything())) %>%
-  gather("year", "rank", 7:27) %>%
-  mutate(year = as.numeric(year)) %>%
-  group_by(scientific_name) %>%
-  arrange( year, .by_group = TRUE) %>%
-  #fill(rank, .direction = "down") %>%
-  ungroup()
-
-#indata <- vdata %>%
-#  drop_na(rank)
-
-#define the years of assesment per group # this needs some reworking
-
-# am <- c(1992,1998, 2002, 2010, 2018)
-# bb <- c(1992, 1997, 2001, 2005, 2009, 2015, 2018)
-# ff <- c(1992, 1998, 2001, 2005, 2010, 2012, 2018, 2019)
-# ma <- c(1992, 1995, 2001, 2003, 2006, 2007, 2011, 2015, 20017, 2018)
-# rt <- c(1992, 1998, 2002, 2008, 2012, 2018)
-#
-# xx <- indata %>%
-#   mutate(keep = ifelse(taxonomic_group == 'Amphibians' & year %in% am, T,
-#                        ifelse(taxonomic_group == "Breeding Birds" & year %in% bb, T,
-#                               ifelse(taxonomic_group == "Freshwater Fish"  & year %in% ff, T,
-#                                      ifelse(taxonomic_group == "Mammals"  & year %in% ma, T,
-#                                             ifelse(taxonomic_group == "Reptiles and Turtles"  & year %in% rt, T,F))))))
-
-#indata <- xx %>%
-#  filter(keep == TRUE) %>%
-#  select(-(keep)) %>%
-#  select(taxonomic_group, scientific_name,
-#         common_name, elcode, bc_list, origin,
-#         year, rank)
-
-
-# remove exotics
-indata <- vdata %>%
-  filter(!origin %in% c("Exotic","Unknown/Undetermined"))
-
-keep <- c("Blue", "Yellow", "Red", "Extinct")
-
-indata <- indata %>%
-  filter(bc_list %in% keep)
-
-
-# check the number of species by BC List
-#sp.catergory <- x %>%
-#  group_by(`bc_list`) %>%
-#  summarise(count = n())
-
-# check the number of species by BC List
-#sp.catergory <- x %>%
-#  group_by(taxonomic_group, year) %>%
-#  summarise(count = n())
-
-
-# check the non-matching species : ie where present in early reports and not in laters (ie: subspecies vs species)
-
-
-unmatched <- function(tgroup, year1, year2) {
-
-#  tgroup = "Mammals"
-#  year1 = 2007
-#  year2 = 2011
-
-  t1 <- x %>% filter(taxonomic_group == tgroup, year == year1) %>%
-    distinct(scientific_name)
-  t2 <- x %>% filter(taxonomic_group == tgroup, year == year2) %>%
-    distinct(scientific_name)
-  out1 <- anti_join(t2, t1)
-  out2 <- anti_join(t1, t2)
-  out <- bind_rows(out1, out2)
-  out
-}
-
-mammals <- unmatched("Mammals", year1 = 2007, year2 = 2011 )
-reptiles <- unmatched("Reptiles and Turtles", 2008, 2017)
-amphibians <- unmatched("Amphibians", 2010, 2018)
-ff <- unmatched("Freshwater Fish", 2010, 2018)
-bb <- unmatched("Breeding Birds", 2001, 2018)
-
-unmatch_sp <- bind_rows(mammals, reptiles, amphibians, ff, bb)
-
-
-longsp <- unmatch_sp %>%
-    left_join(., vdata.0)
-
-#write.csv(longsp, file.path("data", "sp_subsp_check.csv"))
-
-
-
-
+write.csv(all.long, file.path("data","raw","manual_checks", "test.csv"))
 #write.csv(indata, file.path("data", "indata.csv"), row.names = FALSE)
 
-saveRDS(indata, file.path("data","indata.R"))
+saveRDS(all.long, file.path("data","indata.R"))
 
 
