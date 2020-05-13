@@ -730,7 +730,7 @@ all.wide.final <- bind_rows(all.wide.keep, updates) %>%
 # comvert to long
 all.long <- all.wide.final %>%
   pivot_longer(., cols = -c(taxonomic_group, scientific_name, elcode),
-               names_to = "Year", values_to = "SRank")
+               names_to = "year", values_to = "srank")
 
 
 # add the provincial rankings and common names
@@ -828,11 +828,9 @@ all.long <- all.long.prov %>%
 
 
 all.long <- all.long %>%
-  rename(Taxonomic_group = taxonomic_group,
-         Scientific_name = scientific_name,
-         Common_name = english_name) %>%
-  select(elcode, Taxonomic_group, Scientific_name, Common_name,
-         bc_list, origin, Year, SRank)
+  rename(common_name = english_name) %>%
+  select(elcode, taxonomic_group, scientific_name, common_name,
+         bc_list, origin, year, srank)
 
 
 
