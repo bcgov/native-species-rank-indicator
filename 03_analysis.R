@@ -21,17 +21,26 @@ library(tidyr)
 # or read in a local copy temporarily
 indata <- readRDS(file.path("data","indata.r"))
 
-# note this is native sp.only
+
+indata <- indata %>%
+  filter(!is.na(srank))
+
+
+# somthing not working here with 5 - command
+
 
 status_data_wts <- indata %>%
-  mutate(parsed_rank_single = ranks_to_numeric(rank, simplify = FALSE, round_fun = min),  # tried to extract 1st value ? not working
+  mutate(parsed_rank_single = ranks_to_numeric(srank, simplify = FALSE, round_fun = min),  # tried to extract 1st value ? not working
          wts = 5 - parsed_rank_single)
 
 
-#status_data_wts <- indata %>%
-#  mutate(parsed_rank_single = ranks_to_numeric(rank, simplify = FALSE)#,  # tried to extract 1st value ? not working
-#      #   wts = 5 - parsed_rank_single)
-#status
+status_data_wts <- indata %>%
+  mutate(parsed_rank_single = ranks_to_numeric(srank, simplify = FALSE),
+        wts = 5 - parsed_rank_single)
+
+
+
+
 
 
 status_complete <- status_data_wts %>%

@@ -17,6 +17,7 @@ library(readr)
 library(dplyr)
 library(ranktrends)
 
+
 # read in data set from data catalogue
 #ref.0  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/bc-vertebrates-conservation-status-rank-history-1992-2012/resource/842bcf0f-acd2-4587-a6df-843ba33ec271https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
 
@@ -27,7 +28,6 @@ verts <- read_csv(file.path("data", "verts_retroranks.csv"))
 inverts <- read_csv(file.path("data", "inverts_retroranks.csv"))
 
 indata <- bind_rows(verts, inverts)
-
 
 
 # check the number of species by types:
@@ -48,8 +48,5 @@ sp.catergory <- indata %>%
   summarise(count = n())
 
 
-# remove the exotics
-indata <- indata %>%
-  filter(!origin %in% c("Exotic", "Unknown/Undetermined"))
-
+if (!dir.exists("data")) dir.create("data")
 saveRDS(indata, file.path("data","indata.R"))
