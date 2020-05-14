@@ -539,12 +539,20 @@ all.long.temp <- all.long.temp %>%
 all.long.temp <- all.long.temp %>%
   mutate(scientific_name = ifelse(scientific_name == "thymallus arcticus - northern beringean lineage",
                                   "thymallus arcticus - southern beringean lineage", scientific_name),
-      elcode = ifelse(scientific_name == "thymallus arcticus - southern beringean lineage", "AFCHB03030", elcode))
+      elcode = ifelse(scientific_name == "thymallus arcticus - southern beringean lineage", "AFCHB03030", elcode),
+      taxonomic_group = ifelse(scientific_name %in% c("thymallus arcticus - southern beringean lineage",
+                                                      "oncorhynchus mykiss- interior lineage",
+                                                      "oncorhynchus mykiss - coastal lineage",
+                                                      "spirinchus sp. 1"),
+                               "Freshwater Fish", taxonomic_group))
 
 
 # check nas
-#unique(all.long.temp  %>% filter(is.na(elcode))%>%
-#  select(scientific_name))
+unique(all.long.temp  %>% filter(is.na(elcode))%>%
+  select(scientific_name))
+
+unique(all.long.temp  %>% filter(is.na(taxonomic_group))%>%
+         select(scientific_name))
 
 
  ## convert back to wide format
@@ -759,7 +767,6 @@ prov_list <- read_csv(file.path("data","raw",
 
 
 
-
 # add provincial listing
 
 all.long.prov <- all.long%>%
@@ -770,7 +777,6 @@ no.list = all.long.prov %>%
   select(scientific_name) %>%
   unique()
 
-#unique(all.long.prov$bc_list)
 
 # add prov list where missing
 
@@ -813,6 +819,7 @@ all.long <- all.long.prov %>%
   mutate(bc_list.x = ifelse(is.na(bc_list.x), bc_list.y, bc_list.x)) %>%
   rename(bc_list = bc_list.x) %>%
   select(-c(bc_list.y, element_code))
+
 
 ## data checks
 #no.list = all.long %>%
