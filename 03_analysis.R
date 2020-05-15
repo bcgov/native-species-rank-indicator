@@ -26,6 +26,9 @@ indata <- indata %>%
   filter(!is.na(srank))
 
 
+indata <- indata
+
+
 # somthing not working here with 5 - command
 
 

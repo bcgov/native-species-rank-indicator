@@ -49,4 +49,4 @@ sp.catergory <- indata %>%
 
 
 if (!dir.exists("data")) dir.create("data")
-saveRDS(indata, file.path("data","indata.R"))
+saveRDS(indata, file.path("data","indata_load.R"))
