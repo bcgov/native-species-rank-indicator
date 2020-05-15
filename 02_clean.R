@@ -19,7 +19,7 @@ library(tidyr)
 library(ggplot2)
 
 # or read in a local copy temporarily
-indata <- readRDS(file.path("data","indata.r"))
+indata <- readRDS(file.path("data","indata_load.r"))
 
 
 # filter species to remove (exotics)
