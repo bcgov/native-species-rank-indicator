@@ -13,37 +13,49 @@
 
 #remotes::install_github("bcgov/ranktrends")
 
-library(dplyr)
 library(ranktrends)
 library(tidyr)
+library(dplyr)
 
-
-# or read in a local copy temporarily
-indata <- readRDS(file.path("data","indata.r"))
+if (!exists("indata"))
+indata = readRDS(file.path("data","indata.rds"))
+yrs_tax = readRDS(file.path("data","yrs_tax.rds"))
 
 
 indata <- indata %>%
-  filter(!is.na(srank))
+  filter(!is.na(srank)) %>%
+  select(-c(elcode, bc_list, origin))
 
 
-indata <- indata
+
+# S?
+# S1?
+# S2?B
+# S3?N
+# S3S4N,SZN"
+# S4S5B  (currently looks for ,\\s?)
+# SNR
+# SUB
+# SA
+# SU
+# SNA
+# S?
+# SZN
+#S4N,S5M"
+# S5M
 
 
-# somthing not working here with 5 - command
 
 
 status_data_wts <- indata %>%
-  mutate(parsed_rank_single = ranks_to_numeric(srank, simplify = FALSE, round_fun = min),  # tried to extract 1st value ? not working
-         wts = 5 - parsed_rank_single)
+  mutate(parsed_rank_single = ranks_to_numeric(srank, simplify = TRUE, round_fun = min)) %>%
+  filter(!is.na(parsed_rank_single)) %>%
+  mutate(wts = 5 - parsed_rank_single)
 
 
-status_data_wts <- indata %>%
-  mutate(parsed_rank_single = ranks_to_numeric(srank, simplify = FALSE),
-        wts = 5 - parsed_rank_single)
-
-
-
-
+#status_data_wts <- indata %>%
+#  mutate(parsed_rank_single = ranks_to_numeric(srank, simplify = FALSE),
+#        wts = 5 - parsed_rank_single)
 
 
 status_complete <- status_data_wts %>%
@@ -52,6 +64,18 @@ status_complete <- status_data_wts %>%
   semi_join(
     group_by(., taxonomic_group, scientific_name, common_name) %>%
       summarize())
+
+
+# use table to filter years for taxonomic grouup
+status_complete <- status_complete %>%
+  left_join(yrs_tax, by = c("year", "taxonomic_group")) %>%
+  filter(!is.na(count)) %>%
+  select(-count)
+
+
+# now throwing an error here? Dplyr ? or R 4.0?
+
+
 
 # remove those species which are extinct
 species_to_remove <- status_complete %>%
