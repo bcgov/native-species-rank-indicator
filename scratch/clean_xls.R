@@ -820,20 +820,17 @@ all.long <- all.long.prov %>%
   rename(bc_list = bc_list.x) %>%
   select(-c(bc_list.y, element_code))
 
-
 ## data checks
 no.list = all.long %>%
   filter(is.na(bc_list)) %>%
   select(scientific_name) %>%
   unique()
 
-no.list
 ## check common names
 no.name = all.long %>%
   filter(is.na(english_name)) %>%
   select(scientific_name) %>%
   unique()
-
 
 all.long <- all.long %>%
   rename(common_name = english_name) %>%
@@ -842,8 +839,7 @@ all.long <- all.long %>%
   mutate(bc_list = tolower(bc_list))
 
 
-
-write.csv(all.long , file.path("data", "verts_retroranks.csv"), row.names = FALSE)
+write.csv(all.long, file.path("data", "verts_retroranks.csv"), row.names = FALSE)
 
 #saveRDS(all.long, file.path("data","indata.R"))
 
