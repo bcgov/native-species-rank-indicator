@@ -29,11 +29,11 @@ indata <- indata %>%
 
 
 # S?
-# S1?
 # S2?B
 # S3?N
 # S3S4N,SZN"
 # S4S5B  (currently looks for ,\\s?)
+
 # SNR
 # SUB
 # SA
@@ -41,8 +41,11 @@ indata <- indata %>%
 # SNA
 # S?
 # SZN
+
 #S4N,S5M"
 # S5M
+
+# fix the # S1? / # S2?B
 
 
 

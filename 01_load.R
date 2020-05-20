@@ -11,11 +11,8 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 
-remotes::install_github("bcgov/ranktrends")
-
 library(readr)
 library(dplyr)
-library(ranktrends)
 
 
 # read in data set from data catalogue
@@ -46,6 +43,14 @@ sp.catergory <- indata %>%
 sp.catergory <- indata %>%
   group_by(origin, bc_list) %>%
   summarise(count = n())
+
+
+# generate unique S ranks table (temporary_table)
+u_sranks <- indata %>%
+  select(srank) %>%
+  filter(!is.na(srank)) %>%
+  distinct() %>%
+  arrange(srank)
 
 
 if (!dir.exists("data")) dir.create("data")
