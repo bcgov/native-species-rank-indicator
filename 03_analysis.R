@@ -28,9 +28,8 @@ indata <- indata %>%
 
 
 u_sranks <- u_sranks %>%
-  mutate(simple_rank = ranks_to_numeric(u_sranks$srank, simplify = TRUE),
-         nonsimple_rank = ranks_to_numeric(u_sranks$srank, simplify = FALSE))
-
+  mutate(simple_rank = ranks_to_numeric(u_sranks$srank, simplify = TRUE))#,
+        # nonsimple_rank = ranks_to_numeric(u_sranks$srank, simplify = FALSE))
 
 write.csv(u_sranks, file.path("data","raw","sranks_prob_key.csv"))
 
