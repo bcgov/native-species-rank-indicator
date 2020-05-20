@@ -11,10 +11,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 
-
-#devtools::install_github("tidyverse/dplyr")
 library(dplyr)
-library(ranktrends)
 library(tidyr)
 library(ggplot2)
 
@@ -60,7 +57,6 @@ yrs_tax <- indata %>%
   ungroup() %>%
   left_join(tax_sum) %>%
   filter(count >= scientific_name/2)  # keep years with more than 50% sp ranked (?)
-
 
 
 # AT : this is up for discussion?
