@@ -712,7 +712,7 @@ all.wide <- all.long.temp %>%
 
 # read in table Lea has reviewed and formatted :
 
-updates <- read_excel(file.path("data","raw","2020May8_lea_edit.xlsx"),
+updates <- read_excel(file.path("data","raw","2020May15_lea_edit.xlsx"),
                       sheet = "updated_table_to_incorporate") %>%
   select(-c(`...1`, comments.x, comments.y, `propsed action`, `LG agreed`,
             `LG comments`,prev_srank, new_rank, code.x, reason_desc))
@@ -735,7 +735,7 @@ all.wide.final <- bind_rows(all.wide.keep, updates) %>%
 # Final tidy for bcdata output --------------------------------------------
 
 
-# comvert to long
+# convert to long
 all.long <- all.wide.final %>%
   pivot_longer(., cols = -c(taxonomic_group, scientific_name, elcode),
                names_to = "year", values_to = "srank")
@@ -822,16 +822,17 @@ all.long <- all.long.prov %>%
 
 
 ## data checks
-#no.list = all.long %>%
-#  filter(is.na(bc_list)) %>%
-#  select(scientific_name) %>%
-#  unique()
+no.list = all.long %>%
+  filter(is.na(bc_list)) %>%
+  select(scientific_name) %>%
+  unique()
 
+no.list
 ## check common names
-#no.name = all.long %>%
-#  filter(is.na(english_name)) %>%
-#  select(scientific_name) %>%
-#  unique()
+no.name = all.long %>%
+  filter(is.na(english_name)) %>%
+  select(scientific_name) %>%
+  unique()
 
 
 all.long <- all.long %>%
