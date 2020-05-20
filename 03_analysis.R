@@ -27,26 +27,12 @@ indata <- indata %>%
   select(-c(elcode, bc_list, origin))
 
 
+u_sranks <- u_sranks %>%
+  mutate(simple_rank = ranks_to_numeric(u_sranks$srank, simplify = TRUE),
+         nonsimple_rank = ranks_to_numeric(u_sranks$srank, simplify = FALSE))
 
-# S?
-# S2?B
-# S3?N
-# S3S4N,SZN"
-# S4S5B  (currently looks for ,\\s?)
 
-# SNR
-# SUB
-# SA
-# SU
-# SNA
-# S?
-# SZN
-
-#S4N,S5M"
-# S5M
-
-# fix the # S1? / # S2?B
-
+write.csv(u_sranks, file.path("data","raw","sranks_prob_key.csv"))
 
 
 
