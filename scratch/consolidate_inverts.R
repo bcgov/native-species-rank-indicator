@@ -27,6 +27,7 @@ invert.files <- as.list(list.files(file.path("data", "Inverts", "Completed"),
 
 inverts_all <- lapply(invert.files, function(file){
 
+  file <- invert.files[[1]]
   idata <- read_xlsx(file, na = "NA")
 
   yrs <- as.list(c('1995', '1999', '2000', '2001', '2004', '2005', '2006', '2007', '2008',
@@ -36,14 +37,24 @@ inverts_all <- lapply(invert.files, function(file){
   # check both old and adjusted column and get adjusted if updated.
 
   longout <- lapply(yrs, function(y){
+    y <- yrs[[1]]
+
     yr = y
     yr_adj = paste0(yr, "_Adj_SRank")
 
     if(yr %in% names(idata)) {
 
     out <- idata %>%
-      mutate(final = ifelse(is.na( !!sym(yr_adj)), !!sym(yr),!!sym(yr_adj))) %>%
+      mutate(final = ifelse(is.na(!!sym(yr_adj)), !!sym(yr),!!sym(yr_adj))) %>%
       dplyr::select(final)
+
+    # Still to fix fix this bit to ignore NA where there was no review in the years
+   # out <- idata %>%
+  #    mutate(final = ifelse(is.na(!!sym(yr)), !!sym(yr),
+  #                          ifelse(is.na(!!sym(yr_adj)),!!sym(yr),!!sym(yr_adj)))) %>%
+  #    dplyr::select(final)
+
+
 
     names(out) = yr
     out
@@ -94,7 +105,6 @@ indata <- invert_final %>%
   left_join(prov_list, by = "scientific_name")
 
 
-
       # check species with non-matching provincial listings
       # export a list for CDC to check:
 
@@ -136,10 +146,8 @@ indata <- invert_final %>%
     #invert_to_remove <- c("clossiana titania", "agriades rusticus")
 
 
-
 indata <- invert_final %>%
         left_join(prov_list, by = "scientific_name")
-
 
 
 
@@ -154,6 +162,10 @@ inverts <-pivot_longer(indata, cols = -c(taxonomic_group, scientific_name, commo
   select(elcode, taxonomic_group, scientific_name, common_name,
          bc_list, origin, year, srank) %>%
   mutate(bc_list = tolower(bc_list))
+
+
+
+
 
 
 
