@@ -27,7 +27,7 @@ invert.files <- as.list(list.files(file.path("data", "Inverts", "Completed"),
 
 inverts_all <- lapply(invert.files, function(file){
 
-  file <- invert.files[[1]]
+  #file <- invert.files[[1]]
   idata <- read_xlsx(file, na = "NA")
 
   yrs <- as.list(c('1995', '1999', '2000', '2001', '2004', '2005', '2006', '2007', '2008',
@@ -37,33 +37,26 @@ inverts_all <- lapply(invert.files, function(file){
   # check both old and adjusted column and get adjusted if updated.
 
   longout <- lapply(yrs, function(y){
-    y <- yrs[[1]]
+   # y <- yrs[[1]]
 
     yr = y
     yr_adj = paste0(yr, "_Adj_SRank")
 
     if(yr %in% names(idata)) {
 
+   # only update ranks where new rank is given and not NA value for revision
     out <- idata %>%
-      mutate(final = ifelse(is.na(!!sym(yr_adj)), !!sym(yr),!!sym(yr_adj))) %>%
+      mutate(final = ifelse(!is.na(!!sym(yr_adj)), !!sym(yr_adj), !!sym(yr))) %>%
+      mutate(final = ifelse(is.na(!!sym(yr)), (!!sym(yr)), final)) %>%
       dplyr::select(final)
-
-    # Still to fix fix this bit to ignore NA where there was no review in the years
-   # out <- idata %>%
-  #    mutate(final = ifelse(is.na(!!sym(yr)), !!sym(yr),
-  #                          ifelse(is.na(!!sym(yr_adj)),!!sym(yr),!!sym(yr_adj)))) %>%
-  #    dplyr::select(final)
-
-
 
     names(out) = yr
     out
+
     }
   })
 
-
   out <- do.call("cbind", plyr::compact(longout))
-
 
   out_full <- idata %>%
     dplyr::select( ELCODE, scientific_name, common_name, taxonomic_group) %>%
