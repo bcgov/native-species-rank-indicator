@@ -72,7 +72,7 @@ write_csv(inv, file.path(output_dirs, "BCSEE_inverts.csv"))
 
 
 
-if (!file.exists("data/raw/tax_key_full.csv")) {
+if (!file.exists("data/raw/archive/tax_key_full.csv")) {
 
   # create a key with all historic ELcode, names, scinema , Taxanomic
   full_key <- ref.0 %>%
@@ -111,11 +111,11 @@ if (!file.exists("data/raw/tax_key_full.csv")) {
     filter(year == max(year)) %>%
     select(-year)
 
-  write_csv(key, "data/tax_key_full.csv")
-  write_csv(latest_key, "data/raw/tax_key_latest.csv")
+  write_csv(key, "data/raw/archive/tax_key_full.csv")
+  write_csv(latest_key, "data/raw/archive/tax_key_latest.csv")
 } else {
-  key <- read_csv("data/tax_key_full.csv")
-  latest_key <- read_csv("data/raw/tax_key_latest.csv")
+  key <- read_csv("data/raw/archive/tax_key_full.csv")
+  latest_key <- read_csv("data/raw/archive/tax_key_latest.csv")
 }
 
 ref <- ref.0 %>%
@@ -149,6 +149,8 @@ output_dirs <- file.path("data", "Inverts", "Contractor_datasets", group.oi)
 lapply(output_dirs, dir.create, showWarnings = FALSE, recursive = TRUE)
 
 for (i in seq_along(group.oi)) {
+
+  i = 1
   elcode_abbrev <- names(group.oi)[i]
   group <- group.oi[elcode_abbrev]
   gref <- ref %>%
@@ -208,7 +210,7 @@ for (i in seq_along(group.oi)) {
     select(sort(names(data_all))) %>%
     select(ELCODE, scientific_name, everything())
 
-  write_csv(data_all, file.path(output_dirs[i], paste0(group, "_deliverable.csv",sep = "")))
+  write_csv(data_all, file.path(output_dirs[i], paste0(group, "_deliverableXX.csv",sep = "")))
 
 }
 
