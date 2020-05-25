@@ -13,6 +13,7 @@
 
 # import and consolidate invertebrte data:
 
+library(readr)
 library(tidyr)
 library(readxl)
 library(dplyr)
@@ -124,7 +125,7 @@ indata <- invert_final %>%
                taxonomic_group, Comments, everything())
 
       # export data for lea to check
-      write.csv(no.list.coms , file.path("data", "raw","manual_checks","inverts_tax_check.csv"), row.names = FALSE)
+      write.csv(no.list.coms, file.path("data", "raw","manual_checks","inverts_tax_check.csv"), row.names = FALSE)
 
 
 
@@ -137,6 +138,56 @@ indata <- invert_final %>%
     # fix individual species with invalide taxonomy - waiting on CDC
 
     #invert_to_remove <- c("clossiana titania", "agriades rusticus")
+
+
+
+# fix the years of review:
+
+change.data <- file.path("data","raw",
+                               "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.csv")
+
+cdata.0 <- read_csv(change.data,
+                          col_types = cols_only(
+                            ELCODE = col_character(),
+                            SCIENTIFIC_NAME = col_character(),
+                            ENGLISH_NAME = col_character(),
+                            CURRENT_SRANK = col_character(),
+                            BC_LIST = col_character(),
+                            RANK_REVIEW_DATE = col_date(),
+                            RANK_CHANGE_DATE = col_date(),
+                            CHANGE_ENTRY_DATE = col_date(),
+                            PREV_SRANK = col_character(),
+                            NEW_RANK = col_character(),
+                            CODE= col_number(),
+                            REASON_DESC = col_character(),
+                            COMMENTS = col_character()
+                          )
+      ) %>%
+        rename_all(function(x) tolower(gsub("\\s+", "_", x))) %>%
+        filter(startsWith(elcode, "I")) %>%
+        filter(!grepl("^(Search|Sort|Open|Animals)", scientific_name),
+               !is.na(scientific_name)) %>%
+        filter(!bc_list == "Accidental")%>%
+        mutate(scientific_name = tolower(trimws(scientific_name, "both")),
+               review_year = year(rank_review_date),
+               change_year = year(rank_change_date),
+               change_entry_yr = year(change_entry_date)) %>%
+       select(c(elcode, scientific_name, review_year, change_year, change_entry_yr))
+
+
+      # keep the full set of change data to use for assessing the multiple review of new data
+
+  #    cdata <- cdata.0 %>%
+  #      filter(change_year > 2012)
+
+cdata <- pivot_longer(cdata.0 , cols = -c(elcode, scientific_name),
+                     names_to = "syear", values_to = "year") %>%
+  select(-syear) %>%
+  distinct() %>%
+  drop_na() %>%
+  mutate(review_yr = "yes",  year = as.character(year))
+
+
 
 
 indata <- invert_final %>%
@@ -158,7 +209,22 @@ inverts <-pivot_longer(indata, cols = -c(taxonomic_group, scientific_name, commo
 
 
 
+# join the review dates
 
+inverts.final <- inverts %>%
+  left_join(cdata)
+
+
+reviewed_yrs <- inverts.final %>%
+  drop_na() %>%
+  group_by(elcode) %>%
+  summarise(count = n())
+
+
+reviewed_yrs <- inverts.final %>%
+  drop_na() %>%
+  group_by(review_yr, taxonomic_group, year) %>%
+  summarise(count = n())
 
 
 
