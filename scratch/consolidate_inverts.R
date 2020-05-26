@@ -68,6 +68,9 @@ inverts_all <- lapply(invert.files, function(file){
 
 invert_final <- do.call("bind_rows", inverts_all)
 
+invert_final <- invert_final %>%
+  mutate(`2019` = `2018`)
+
 
 # check names with the provincial list
 
@@ -97,7 +100,6 @@ prov_list <- read_csv(file.path("data","raw",
 
 indata <- invert_final %>%
   left_join(prov_list, by = "scientific_name")
-
 
       # check species with non-matching provincial listings
       # export a list for CDC to check:
@@ -141,7 +143,7 @@ indata <- invert_final %>%
 
 
 
-# fix the years of review:
+# check the years of review:
 
 change.data <- file.path("data","raw",
                                "Copy of Rank_Changes_Verts_Leps_Odonates_Molluscs2.csv")
@@ -188,11 +190,8 @@ cdata <- pivot_longer(cdata.0 , cols = -c(elcode, scientific_name),
   mutate(review_yr = "yes",  year = as.character(year))
 
 
-
-
 indata <- invert_final %>%
-        left_join(prov_list, by = "scientific_name")
-
+  left_join(prov_list, by = "scientific_name")
 
 
 # convert to long format for export to BC data catalogue
@@ -208,12 +207,9 @@ inverts <-pivot_longer(indata, cols = -c(taxonomic_group, scientific_name, commo
   mutate(bc_list = tolower(bc_list))
 
 
-
 # join the review dates
-
 inverts.final <- inverts %>%
   left_join(cdata)
-
 
 reviewed_yrs <- inverts.final %>%
   drop_na() %>%
@@ -225,6 +221,17 @@ reviewed_yrs <- inverts.final %>%
   drop_na() %>%
   group_by(review_yr, taxonomic_group, year) %>%
   summarise(count = n())
+
+# note : Unfortunately very few reviews were done at any time points
+# so difficult to determine assessment years.
+# added 2019 as time point as Jeremy reviewed all species at this time.
+
+#Options - use continual time points or subset to "estimated point"
+#- lepidoptera : 1995, 1999, 2001, 2013, 2019
+#- Odonata : 2004, 2015, 2019
+#- molluscs: 2009, 2015, 2019
+
+
 
 
 
