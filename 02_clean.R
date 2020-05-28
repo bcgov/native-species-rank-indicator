@@ -63,6 +63,13 @@ yrs_tax <- indata %>%
 # note alternate could be to fill in years and ranks up to the last rank date?
 
 
+
+
+# check all species are in all years for analysis.
+
+
+
+
 # write R objects
 saveRDS(indata, file = "data/indata.rds")
 saveRDS(yrs_tax, file = "data/yrs_tax.rds")
