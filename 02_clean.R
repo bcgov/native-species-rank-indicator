@@ -23,7 +23,8 @@ indata <- readRDS(file.path("data","indata_load.r"))
 
 indata <- indata %>%
   filter(!origin %in% c("Exotic", "Unknown/Undetermined")) %>%
-  filter(!bc_list == "accidental")
+  filter(!bc_list == "accidental") %>%
+  drop_na(srank)
 
 
 # check the number of species by BC List
@@ -37,6 +38,32 @@ indata <- indata %>%
 tax_sum <- indata %>%
   group_by(taxonomic_group)%>%
   summarise(across(scientific_name, n_distinct))
+
+
+
+# set dates for invertebrates
+
+#- lepidoptera : 1995, 1999, 2001, 2008, 2013, 2019
+#- Odonata : 2001, 2004, 2015, 2019
+#- molluscs: 2004, 2010, 2015, 2019
+
+invert_yrs <- tribble(
+  ~ taxonomic_group, ~ year,
+  "Lepidoptera", 1995,
+  "Lepidoptera", 1999,
+  "Lepidoptera", 2001,
+  "Lepidoptera", 2008,
+  "Lepidoptera", 2013,
+  "Lepidoptera", 2019,
+  "Molluscs", 2004,
+  "Molluscs" , 2010,
+  "Molluscs" , 2015,
+  "Molluscs" , 2019,
+  "Odonata" , 2001,
+  "Odonata" , 2004,
+  "Odonata" , 2015,
+  "Odonata" , 2019
+)
 
 
 # calculate the time points for each group assessment and make a table
@@ -56,16 +83,33 @@ yrs_tax <- indata %>%
   summarise(count = n()) %>%
   ungroup() %>%
   left_join(tax_sum) %>%
-  filter(count >= scientific_name/2)  # keep years with more than 50% sp ranked (?)
+  filter(count >= scientific_name/2) %>% # keep years with more than 50% sp ranked (?)
+  select(c(taxonomic_group, year)) %>%
+  filter(!taxonomic_group %in% c("Lepidoptera","Molluscs","Odonata" )) %>%
+  bind_rows(invert_yrs)
 
 
-# AT : this is up for discussion?
-# note alternate could be to fill in years and ranks up to the last rank date?
+# filter the taxanomic group by years
+
+
+
+
 
 
 
 
 # check all species are in all years for analysis.
+
+
+
+sp.per.yr <- indata %>%
+  group_by(taxonomic_group, year) %>%
+  summarise(across(scientific_name, n_distinct))
+
+
+sp.to.keep <- indata
+
+# remove species that are not represented in all years (unless Sx?)
 
 
 
