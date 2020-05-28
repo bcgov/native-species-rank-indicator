@@ -18,6 +18,7 @@ library(tidyr)
 library(readxl)
 library(dplyr)
 library(stringr)
+library(lubridate)
 
 source("R/lookup_elcode.R")
 
@@ -131,16 +132,19 @@ indata <- invert_final %>%
 
 
 
+# Remove individuals as checked by lea : (May 28th 2020)
 
 
-## Still to do !!!
+to.remove  <- file.path("data", "raw", "lg_edit_retro ranking inverts.xlsx")
+
+to.remove <- read_xlsx(to.remove) %>%
+  select(scientific_name, other_scientifi_names, include_in_analysis) %>%
+  filter(include_in_analysis == "no") %>%
+  pull(scientific_name)
 
 
-
-    # fix individual species with invalide taxonomy - waiting on CDC
-
-    #invert_to_remove <- c("clossiana titania", "agriades rusticus")
-
+invert_final <- invert_final %>%
+  filter(!scientific_name %in% to.remove)
 
 
 # check the years of review:
@@ -177,7 +181,7 @@ cdata.0 <- read_csv(change.data,
        select(c(elcode, scientific_name, review_year, change_year, change_entry_yr))
 
 
-      # keep the full set of change data to use for assessing the multiple review of new data
+# keep the full set of change data to use for assessing the multiple review of new data
 
   #    cdata <- cdata.0 %>%
   #      filter(change_year > 2012)
@@ -196,16 +200,15 @@ indata <- invert_final %>%
 
 # convert to long format for export to BC data catalogue
 indata <- indata %>%
-  select(-c("element_code", english_name))
+  select(-c("element_code"))
 
 # comvert to long
-inverts <-pivot_longer(indata, cols = -c(taxonomic_group, scientific_name, common_name, bc_list, origin, ELCODE),
+inverts <- pivot_longer(indata, cols = -c(taxonomic_group, scientific_name, common_name, bc_list, origin, ELCODE),
                names_to = "year", values_to = "srank") %>%
   rename_all(.funs = tolower) %>%
   select(elcode, taxonomic_group, scientific_name, common_name,
          bc_list, origin, year, srank) %>%
   mutate(bc_list = tolower(bc_list))
-
 
 # join the review dates
 inverts.final <- inverts %>%
@@ -227,12 +230,9 @@ reviewed_yrs <- inverts.final %>%
 # added 2019 as time point as Jeremy reviewed all species at this time.
 
 #Options - use continual time points or subset to "estimated point"
-#- lepidoptera : 1995, 1999, 2001, 2013, 2019
-#- Odonata : 2004, 2015, 2019
-#- molluscs: 2009, 2015, 2019
-
-
-
+#- lepidoptera : 1995, 1999, 2001, 2008, 2013, 2019
+#- Odonata : 2001, 2004, 2015, 2019
+#- molluscs: 2004, 2010, 2015, 2019
 
 
 write.csv(inverts, file.path("data", "inverts_retroranks.csv"), row.names = FALSE)
