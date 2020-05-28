@@ -13,25 +13,37 @@
 
 #remotes::install_github("bcgov/ranktrends")
 
-library(dplyr)
 library(ranktrends)
 library(tidyr)
+library(dplyr)
+
+if (!exists("indata"))
+indata = readRDS(file.path("data","indata.rds"))
+yrs_tax = readRDS(file.path("data","yrs_tax.rds"))
 
 
-# or read in a local copy temporarily
-indata <- readRDS(file.path("data","indata.r"))
+indata <- indata %>%
+  filter(!is.na(srank)) %>%
+  select(-c(elcode, bc_list, origin))
 
-# note this is native sp.only
+
+u_sranks <- u_sranks %>%
+  mutate(simple_rank = ranks_to_numeric(u_sranks$srank, simplify = TRUE))#,
+        # nonsimple_rank = ranks_to_numeric(u_sranks$srank, simplify = FALSE))
+
+write.csv(u_sranks, file.path("data","raw","sranks_prob_key.csv"))
+
+
 
 status_data_wts <- indata %>%
-  mutate(parsed_rank_single = ranks_to_numeric(rank, simplify = FALSE, round_fun = min),  # tried to extract 1st value ? not working
-         wts = 5 - parsed_rank_single)
+  mutate(parsed_rank_single = ranks_to_numeric(srank, simplify = TRUE, round_fun = min)) %>%
+  filter(!is.na(parsed_rank_single)) %>%
+  mutate(wts = 5 - parsed_rank_single)
 
 
 #status_data_wts <- indata %>%
-#  mutate(parsed_rank_single = ranks_to_numeric(rank, simplify = FALSE)#,  # tried to extract 1st value ? not working
-#      #   wts = 5 - parsed_rank_single)
-#status
+#  mutate(parsed_rank_single = ranks_to_numeric(srank, simplify = FALSE),
+#        wts = 5 - parsed_rank_single)
 
 
 status_complete <- status_data_wts %>%
@@ -40,6 +52,18 @@ status_complete <- status_data_wts %>%
   semi_join(
     group_by(., taxonomic_group, scientific_name, common_name) %>%
       summarize())
+
+
+# use table to filter years for taxonomic grouup
+status_complete <- status_complete %>%
+  left_join(yrs_tax, by = c("year", "taxonomic_group")) %>%
+  filter(!is.na(count)) %>%
+  select(-count)
+
+
+# now throwing an error here? Dplyr ? or R 4.0?
+
+
 
 # remove those species which are extinct
 species_to_remove <- status_complete %>%

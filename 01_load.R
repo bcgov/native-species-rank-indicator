@@ -11,16 +11,20 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 
-# remotes::install_github("bcgov/ranktrends")
-
+library(readr)
 library(dplyr)
-library(ranktrends)
+
 
 # read in data set from data catalogue
 #ref.0  <- read_csv("https://catalogue.data.gov.bc.ca/dataset/bc-vertebrates-conservation-status-rank-history-1992-2012/resource/842bcf0f-acd2-4587-a6df-843ba33ec271https://catalogue.data.gov.bc.ca/dataset/4484d4cd-3219-4e18-9a2d-4766fe25a36e/resource/842bcf0f-acd2-4587-a6df-843ba33ec271/download/historicalranksvertebrates1992-2012.csv")
 
+
 # or read in a local copy temporarily
-indata <- readRDS(file.path("data","indata.r"))
+
+verts <- read_csv(file.path("data", "verts_retroranks.csv"))
+inverts <- read_csv(file.path("data", "inverts_retroranks.csv"))
+
+indata <- bind_rows(verts, inverts)
 
 
 # check the number of species by types:
@@ -41,8 +45,13 @@ sp.catergory <- indata %>%
   summarise(count = n())
 
 
-# remove the exotics
-indata <- indata %>%
-  filter(!origin %in% c("Exotic", "Unknown/Undetermined"))
+# generate unique S ranks table (temporary_table)
+u_sranks <- indata %>%
+  select(srank) %>%
+  filter(!is.na(srank)) %>%
+  distinct() %>%
+  arrange(srank)
 
-saveRDS(indata, file.path("data","indata.R"))
+
+if (!dir.exists("data")) dir.create("data")
+saveRDS(indata, file.path("data","indata_load.R"))
