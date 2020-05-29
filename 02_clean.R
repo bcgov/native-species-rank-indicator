@@ -101,8 +101,7 @@ sdata <- sdata %>%
   # 4912
 
 
-
 # write R objects
 
-saveRDS(indata, file = "data/indata.rds")
+saveRDS(sdata, file = "data/indata.rds")
 
