@@ -23,29 +23,20 @@ indata <- readRDS(file.path("data","indata_load.r"))
 
 indata <- indata %>%
   filter(!origin %in% c("Exotic", "Unknown/Undetermined")) %>%
-  filter(!bc_list == "accidental") %>%
+  filter(!bc_list == "accidental")
+
+
+# calculate the time points for each group assessment and make a table
+
+yr.data <- indata %>%
   drop_na(srank)
 
-
-# check the number of species by BC List
-#sp.catergory <- indata %>%
-#  group_by(origin, bc_list) %>%
-#  summarise(count = n())
-
-
-# get a summary of species per taxanomic group
-
-tax_sum <- indata %>%
-  group_by(taxonomic_group)%>%
-  summarise(across(scientific_name, n_distinct))
-
+ggplot(yr.data, aes(year)) +
+  geom_bar() +
+  facet_wrap(vars(taxonomic_group), scales = "free")
 
 
 # set dates for invertebrates
-
-#- lepidoptera : 1995, 1999, 2001, 2008, 2013, 2019
-#- Odonata : 2001, 2004, 2015, 2019
-#- molluscs: 2004, 2010, 2015, 2019
 
 invert_yrs <- tribble(
   ~ taxonomic_group, ~ year,
@@ -55,7 +46,7 @@ invert_yrs <- tribble(
   "Lepidoptera", 2008,
   "Lepidoptera", 2013,
   "Lepidoptera", 2019,
-  "Molluscs", 2004,
+  "Molluscs" , 2004,
   "Molluscs" , 2010,
   "Molluscs" , 2015,
   "Molluscs" , 2019,
@@ -65,20 +56,8 @@ invert_yrs <- tribble(
   "Odonata" , 2019
 )
 
-
-# calculate the time points for each group assessment and make a table
-
-yrs <- indata %>%
-  filter(!is.na(srank))
-
-ggplot(yrs, aes(year)) +
-  geom_bar() +
-  facet_wrap(vars(taxonomic_group), scales = "free")
-
-
 # generate a table
-yrs_tax <- indata %>%
-  filter(!is.na(srank)) %>%
+yrs_tax <- yr.data %>%
   group_by(taxonomic_group, year) %>%
   summarise(count = n()) %>%
   ungroup() %>%
@@ -89,34 +68,41 @@ yrs_tax <- indata %>%
   bind_rows(invert_yrs)
 
 
-# filter the taxanomic group by years
+
+# fill missing ranks then filter by years of assessment
+
+sdata <- indata %>%
+  group_by(scientific_name) %>%
+  fill(srank, .direction = "down") %>%
+  inner_join(yrs_tax) %>%
+  drop_na(srank)
 
 
+# check which species are present in all years
+
+sp.to.keep <- sdata %>%
+  group_by(taxonomic_group, scientific_name) %>%
+  summarise(count = n()) %>%
+  mutate(median = median(count), to.keep = count - median) %>%
+  filter(to.keep == 0) %>%
+  select(scientific_name) %>%
+  pull()
+
+  #length(sdata$elcode)
+  #5570
 
 
+# filter the data
 
+sdata <- sdata %>%
+  filter(scientific_name %in% sp.to.keep)
 
-
-
-# check all species are in all years for analysis.
-
-
-
-sp.per.yr <- indata %>%
-  group_by(taxonomic_group, year) %>%
-  summarise(across(scientific_name, n_distinct))
-
-
-sp.to.keep <- indata
-
-# remove species that are not represented in all years (unless Sx?)
-
+  #length(sdata$elcode)
+  # 4912
 
 
 
 # write R objects
+
 saveRDS(indata, file = "data/indata.rds")
-saveRDS(yrs_tax, file = "data/yrs_tax.rds")
-
-
 
