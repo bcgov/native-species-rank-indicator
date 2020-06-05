@@ -26,46 +26,82 @@ indata <- indata %>%
   filter(!bc_list == "accidental")
 
 
-# check the number of species by BC List
-#sp.catergory <- indata %>%
-#  group_by(origin, bc_list) %>%
-#  summarise(count = n())
-
-
-# get a summary of species per taxanomic group
-
-tax_sum <- indata %>%
-  group_by(taxonomic_group)%>%
-  summarise(across(scientific_name, n_distinct))
-
-
 # calculate the time points for each group assessment and make a table
 
-yrs <- indata %>%
-  filter(!is.na(srank))
+yr.data <- indata %>%
+  drop_na(srank)
 
-ggplot(yrs, aes(year)) +
+ggplot(yr.data, aes(year)) +
   geom_bar() +
   facet_wrap(vars(taxonomic_group), scales = "free")
 
 
+# set dates for invertebrates
+
+invert_yrs <- tribble(
+  ~ taxonomic_group, ~ year,
+  "Lepidoptera", 1995,
+  "Lepidoptera", 1999,
+  "Lepidoptera", 2001,
+  "Lepidoptera", 2008,
+  "Lepidoptera", 2013,
+  "Lepidoptera", 2019,
+  "Molluscs" , 2004,
+  "Molluscs" , 2010,
+  "Molluscs" , 2015,
+  "Molluscs" , 2019,
+  "Odonata" , 2001,
+  "Odonata" , 2004,
+  "Odonata" , 2015,
+  "Odonata" , 2019
+)
+
 # generate a table
-yrs_tax <- indata %>%
-  filter(!is.na(srank)) %>%
+yrs_tax <- yr.data %>%
   group_by(taxonomic_group, year) %>%
   summarise(count = n()) %>%
   ungroup() %>%
   left_join(tax_sum) %>%
-  filter(count >= scientific_name/2)  # keep years with more than 50% sp ranked (?)
+  filter(count >= scientific_name/2) %>% # keep years with more than 50% sp ranked (?)
+  select(c(taxonomic_group, year)) %>%
+  filter(!taxonomic_group %in% c("Lepidoptera","Molluscs","Odonata" )) %>%
+  bind_rows(invert_yrs)
 
 
-# AT : this is up for discussion?
-# note alternate could be to fill in years and ranks up to the last rank date?
+
+# fill missing ranks then filter by years of assessment
+
+sdata <- indata %>%
+  group_by(scientific_name) %>%
+  fill(srank, .direction = "down") %>%
+  inner_join(yrs_tax) %>%
+  drop_na(srank)
+
+
+# check which species are present in all years
+
+sp.to.keep <- sdata %>%
+  group_by(taxonomic_group, scientific_name) %>%
+  summarise(count = n()) %>%
+  mutate(median = median(count), to.keep = count - median) %>%
+  filter(to.keep == 0) %>%
+  select(scientific_name) %>%
+  pull()
+
+  #length(sdata$elcode)
+  #5570
+
+
+# filter the data
+
+sdata <- sdata %>%
+  filter(scientific_name %in% sp.to.keep)
+
+  #length(sdata$elcode)
+  # 4912
 
 
 # write R objects
-saveRDS(indata, file = "data/indata.rds")
-saveRDS(yrs_tax, file = "data/yrs_tax.rds")
 
-
+saveRDS(sdata, file = "data/indata.rds")
 
