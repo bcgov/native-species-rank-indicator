@@ -1,32 +1,60 @@
-lookup_elcode <- function(sciname, key = NULL, ...) {
+lookup_elcode <- function(sciname, ...) {
   if (!requireNamespace("natserv")) {
     stop("Package 'natserv' required")
   }
-  name_search_results <- try(natserv::ns_search(sciname, key = key, ...))
+
+  name_search_results <- try(
+    natserv::ns_search_spp(
+      text_adv = list(searchToken = sciname,
+                      matchAgainst = "allScientificNames",
+                      operator = "equals"),
+
+      location = list(nation = "CA", subnation = "BC"),
+      ...)
+  )
 
   if (inherits(name_search_results, "try-error")) {
     warning("No results found for ", sciname)
     return(NA_character_)
   }
 
-  global_id <- unique(name_search_results$globalSpeciesUid)
+  summ <- name_search_results$resultsSummary
+  res <- name_search_results$results
 
-  if (length(global_id) > 1) {
-    warning("More than one result for ", sciname)
+  n_match <- summ[summ$name == "species_total", "value"][[1]]
+
+  if (n_match == 0) {
+    warning("No results found for ", sciname)
     return(NA_character_)
   }
 
-  spp_data <- try(natserv::ns_data(global_id, key = key, ...))
+  if (n_match > 1) {
 
-  if (inherits(spp_data, "try-error")) {
-    warning("An error occurred getting data for ", sciname)
-    return(NA_character_)
+    res <- res[
+      simpl(res$scientificName) == simpl(sciname) |
+        vapply(res$speciesGlobal$synonyms, function(x) {
+          any(simpl(sciname) %in% simpl(x))
+        }, FUN.VALUE = logical(1)),
+    ]
+
+    if (nrow(res) > 1L) {
+      warning("More than one result for ", sciname)
+      return(NA_character_)
+    }
+
+    if (nrow(res) == 0) {
+      warning("No results found for ", sciname)
+      return(NA_character_)
+    }
   }
 
-  spp_data[[1]]$speciesCode
+  res$elcode
+
 }
 
-lookup_elcodes <- function(scinames, key = NULL, ...) {
+lookup_elcodes <- function(scinames, ...) {
   vapply(scinames, lookup_elcode, FUN.VALUE = character(1),
-         key = key, ...)
+        ...)
 }
+
+simpl <- function(x) tolower(gsub("\\s+", "", x))
